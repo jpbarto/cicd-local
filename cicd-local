@@ -1,15 +1,105 @@
 #!/bin/bash
 
 # CICD Local Pipeline Dispatcher
-# Usage: cicd-local <pipeline>
+# Usage: cicd-local <pipeline> [options]
 # Available pipelines: ci, deliver, deploy, iat, staging
+
+show_usage() {
+    cat << 'EOF'
+Usage: cicd-local <pipeline> [OPTIONS]
+
+Available Pipelines:
+  ci          Build and test code changes
+  deliver     Build and publish artifacts to repositories
+  deploy      Deploy application to Kubernetes cluster
+  iat         Integration and Acceptance Testing
+  staging     Blue-green deployment testing
+
+Options vary by pipeline. Use --help with any pipeline for details:
+  cicd-local <pipeline> --help
+
+Pipeline Details:
+
+CI PIPELINE (ci)
+  Build and test code changes, optionally delivering artifacts on PR merge.
+
+  Options:
+    --pipeline-trigger <type>   Pipeline trigger: 'commit' (default) or 'pr-merge'
+    --skip-tests                Skip unit tests
+    --container-repository      Container repository (default: ttl.sh)
+    --helm-repository           Helm repository (default: oci://ttl.sh)
+    --help, -h                  Show help message
+
+  Examples:
+    cicd-local ci                                    # Branch commit (build + test)
+    cicd-local ci --pipeline-trigger=pr-merge        # PR merge (build + test + deliver)
+    cicd-local ci --skip-tests                       # Skip unit tests
+
+DELIVER PIPELINE (deliver)
+  Build and publish artifacts to container and Helm repositories.
+
+  Options:
+    --release-candidate, -rc       Build as release candidate (appends -rc)
+    --skip-build                   Skip build step (use existing tarball)
+    --container-repository <url>   Container repository URL (default: ttl.sh)
+    --helm-repository <url>        Helm OCI repository URL (default: oci://ttl.sh)
+    --help, -h                     Show help message
+
+  Examples:
+    cicd-local deliver                            # Build and deliver
+    cicd-local deliver --release-candidate        # Build and deliver release candidate
+    cicd-local deliver --skip-build               # Deliver using existing build
+
+DEPLOY PIPELINE (deploy)
+  Deploy application to a Kubernetes cluster and validate the deployment.
+
+  Options:
+    --release-candidate, -rc   Deploy release candidate version
+    --skip-validation          Skip validation step after deployment
+    --release-name <name>      Helm release name (default: goserv)
+    --namespace <name>         Kubernetes namespace (default: goserv)
+    --colima-profile <name>    Colima profile to use (default: acme-local)
+    --help, -h                 Show help message
+
+  Examples:
+    cicd-local deploy                             # Deploy to local cluster
+    cicd-local deploy --release-candidate         # Deploy release candidate
+    cicd-local deploy --namespace=production      # Deploy to specific namespace
+
+IAT PIPELINE (iat)
+  Integration and Acceptance Testing - deploys application and runs integration tests.
+  Note: Always uses release candidate (-rc) builds.
+
+  Options:
+    --skip-deploy              Skip deployment step (use existing deployment)
+    --help, -h                 Show help message
+
+  Examples:
+    cicd-local iat                 # Deploy and run integration tests
+    cicd-local iat --skip-deploy   # Run tests on existing deployment
+
+STAGING PIPELINE (staging)
+  Blue-green deployment testing - validates rollback scenarios by deploying current
+  version, rolling back to previous release, then re-deploying current version.
+  Note: Always uses release candidate (-rc) builds.
+
+  Options:
+    --help, -h                 Show help message
+
+  Examples:
+    cicd-local staging            # Run blue-green deployment test
+
+For more information on a specific pipeline, run:
+  cicd-local <pipeline> --help
+EOF
+}
 
 PIPELINE=$1
 
-if [ -z "$PIPELINE" ]; then
-    echo "Usage: cicd-local <pipeline>"
-    echo "Available pipelines: ci, iat, staging, deliver, deploy"
-    exit 1
+# Check for help flag or no arguments
+if [ -z "$PIPELINE" ] || [ "$PIPELINE" = "--help" ] || [ "$PIPELINE" = "-h" ]; then
+    show_usage
+    exit 0
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
