@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# CICD Local Pipeline Dispatcher
+# Usage: cicd-local <pipeline>
+# Available pipelines: ci, deliver, deploy, iat, staging
+
+PIPELINE=$1
+
+if [ -z "$PIPELINE" ]; then
+    echo "Usage: cicd-local <pipeline>"
+    echo "Available pipelines: ci, deliver, deploy, iat, staging"
+    exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PIPELINE_SCRIPT="$SCRIPT_DIR/local_${PIPELINE}_pipeline.sh"
+
+if [ ! -f "$PIPELINE_SCRIPT" ]; then
+    echo "Error: Pipeline '$PIPELINE' not found"
+    echo "Available pipelines: ci, deliver, deploy, iat, staging"
+    exit 1
+fi
+
+# Export the project directory (caller's current directory) for the pipeline script
+export PROJECT_DIR="$(pwd)"
+
+exec "$PIPELINE_SCRIPT" "${@:2}"

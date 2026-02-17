@@ -45,7 +45,7 @@ NC='\033[0m' # No Color
 # Default configuration
 RELEASE_CANDIDATE=true  # IAT always uses release candidate builds
 SKIP_DEPLOY=false
-SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SOURCE_DIR="${PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 COLIMA_PROFILE="acme-local"
 KUBECTL_CONTEXT="colima-${COLIMA_PROFILE}"
 RELEASE_NAME="goserv"

@@ -46,7 +46,7 @@ NC='\033[0m' # No Color
 # Default configuration
 RELEASE_CANDIDATE=false
 SKIP_BUILD=false
-SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SOURCE_DIR="${PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 CONTAINER_REPOSITORY_URL="${CONTAINER_REPOSITORY_URL:-ttl.sh}"
 HELM_REPOSITORY_URL="${HELM_REPOSITORY_URL:-oci://ttl.sh}"
 

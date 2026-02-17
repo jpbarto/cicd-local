@@ -35,7 +35,7 @@ NC='\033[0m' # No Color
 RELEASE_CANDIDATE=false
 SKIP_TESTS=false
 PIPELINE_TRIGGER="commit"
-SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SOURCE_DIR="${PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 CONTAINER_REPOSITORY_URL="ttl.sh"
 HELM_REPOSITORY_URL="oci://ttl.sh"
 
