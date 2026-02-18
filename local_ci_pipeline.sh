@@ -177,20 +177,21 @@ fi
 
 print_step "Step 1: Build Docker Image"
 
-BUILD_CMD="dagger -m cicd call build --source=$SOURCE_DIR export --path=./build/goserv-image.tar"
+BUILD_CMD="dagger -m cicd call build --source=$SOURCE_DIR"
 if [ "$RELEASE_CANDIDATE" = true ]; then
-    BUILD_CMD="dagger -m cicd call build --source=$SOURCE_DIR --release-candidate=true export --path=./build/goserv-image.tar"
+    BUILD_CMD="$BUILD_CMD --release-candidate=true"
 fi
+BUILD_CMD="$BUILD_CMD export --path=./output/build/buildArtifact"
 
 print_info "Running: $BUILD_CMD"
 echo ""
 
 # Create build directory if it doesn't exist
-mkdir -p ./build
+mkdir -p ./output/build
 
 if eval "$BUILD_CMD"; then
     print_success "Build completed successfully"
-    print_info "Multi-arch image exported to: ./build/goserv-image.tar"
+    print_info "Build output exported to: ./output/build/buildArtifact"
 else
     print_error "Build failed"
     exit 1
@@ -203,7 +204,7 @@ fi
 if [ "$SKIP_TESTS" = false ]; then
     print_step "Step 2: Run Unit Tests"
     
-    TEST_CMD="dagger -m cicd call unit-test --source=$SOURCE_DIR --image-tarball=./build/goserv-image.tar"
+    TEST_CMD="dagger -m cicd call unit-test --source=$SOURCE_DIR --build-artifact=./output/build/buildArtifact"
     print_info "Running: $TEST_CMD"
     echo ""
     
@@ -227,7 +228,7 @@ if [ "$PIPELINE_TRIGGER" = "pr-merge" ]; then
     DELIVER_CMD="dagger -m cicd call deliver --source=$SOURCE_DIR"
     DELIVER_CMD="$DELIVER_CMD --container-repository=$CONTAINER_REPOSITORY_URL"
     DELIVER_CMD="$DELIVER_CMD --helm-repository=$HELM_REPOSITORY_URL"
-    DELIVER_CMD="$DELIVER_CMD --image-tarball=./build/goserv-image.tar"
+    DELIVER_CMD="$DELIVER_CMD --build-artifact=./output/build/buildArtifact"
     
     if [ "$RELEASE_CANDIDATE" = true ]; then
         DELIVER_CMD="$DELIVER_CMD --release-candidate=true"
@@ -256,7 +257,7 @@ if [ "$PIPELINE_TRIGGER" = "commit" ]; then
     echo -e "${GREEN}✓${NC} Commit pipeline completed successfully"
     echo ""
     echo "Executed steps:"
-    echo "  1. Build multi-architecture container image"
+    echo "  1. Build repository artifacts"
     if [ "$SKIP_TESTS" = false ]; then
         echo "  2. Run unit tests"
     else
@@ -268,7 +269,7 @@ else
     echo -e "${GREEN}✓${NC} PR merge pipeline completed successfully"
     echo ""
     echo "Executed steps:"
-    echo "  1. Build multi-architecture container image"
+    echo "  1. Build repository artifacts"
     if [ "$SKIP_TESTS" = false ]; then
         echo "  2. Run unit tests"
     else
@@ -283,5 +284,5 @@ fi
 
 echo ""
 echo "For Integration Acceptance Testing (IAT), run:"
-echo "  ./cicd/local_iat_pipeline.sh"
+echo "  cicd-local iat"
 echo ""
