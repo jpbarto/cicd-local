@@ -258,6 +258,7 @@ async deliver(
 func (m *YourModule) Deploy(
     ctx context.Context,
     source *dagger.Directory,
+    awsconfig *dagger.Secret,
     kubeconfig *dagger.Secret,
     helmRepository string,
     containerRepository string,
@@ -271,7 +272,8 @@ func (m *YourModule) Deploy(
 async def deploy(
     self,
     source: dagger.Directory,
-    kubeconfig: dagger.Secret,
+    awsconfig: Optional[dagger.Secret] = None,
+    kubeconfig: Optional[dagger.Secret] = None,
     helm_repository: str = "oci://ttl.sh",
     container_repository: str = "ttl.sh",
     release_candidate: bool = False,
@@ -282,6 +284,7 @@ async def deploy(
 ```java
 public File deploy(
     Directory source,
+    Secret awsconfig,
     Secret kubeconfig,
     String helmRepository,
     String containerRepository,
@@ -294,7 +297,8 @@ public File deploy(
 @func()
 async deploy(
     source: Directory,
-    kubeconfig: Secret,
+    awsconfig?: Secret,
+    kubeconfig?: Secret,
     helmRepository: string = "oci://ttl.sh",
     containerRepository: string = "ttl.sh",
     releaseCandidate: boolean = false
@@ -313,6 +317,8 @@ func (m *YourModule) Validate(
     ctx context.Context,
     source *dagger.Directory,
     kubeconfig *dagger.Secret,
+    releaseName string,
+    namespace string,
     expectedVersion string,
     releaseCandidate bool,
     deploymentContext *dagger.File,
@@ -326,6 +332,8 @@ async def validate(
     self,
     source: dagger.Directory,
     kubeconfig: dagger.Secret,
+    release_name: Optional[str] = None,
+    namespace: Optional[str] = None,
     expected_version: Optional[str] = None,
     release_candidate: bool = False,
     deployment_context: Optional[dagger.File] = None,
@@ -337,6 +345,8 @@ async def validate(
 public String validate(
     Directory source,
     Secret kubeconfig,
+    String releaseName,
+    String namespace,
     String expectedVersion,
     boolean releaseCandidate,
     File deploymentContext
@@ -349,6 +359,8 @@ public String validate(
 async validate(
     source: Directory,
     kubeconfig: Secret,
+    releaseName?: string,
+    namespace?: string,
     expectedVersion?: string,
     releaseCandidate: boolean = false,
     deploymentContext?: File

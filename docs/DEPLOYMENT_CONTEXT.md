@@ -57,6 +57,7 @@ The Deploy function should return a JSON file with the following structure:
 func (m *MyApp) Deploy(
     ctx context.Context,
     source *dagger.Directory,
+    awsconfig *dagger.Secret,
     kubeconfig *dagger.Secret,
     helmRepository string,
     containerRepository string,
@@ -94,10 +95,12 @@ func (m *MyApp) Deploy(
 async def deploy(
     self,
     source: dagger.Directory,
-    kubeconfig: dagger.Secret,
+    awsconfig: Optional[dagger.Secret] = None,
+    kubeconfig: Optional[dagger.Secret] = None,
     helm_repository: str = "oci://ttl.sh",
     container_repository: str = "ttl.sh",
     release_candidate: bool = False,
+) -> dagger.File:
 ) -> dagger.File:
     # Perform deployment...
     namespace = "production"

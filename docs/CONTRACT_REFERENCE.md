@@ -199,14 +199,14 @@ func (m *Goserv) Build(
 func (m *Goserv) UnitTest(
     ctx context.Context,
     source *dagger.Directory,
-    imageTarball *dagger.File,
+    buildArtifact *dagger.File,
 ) (string, error)
 ```
 
 **Parameters**:
 - `ctx context.Context` - Go context for cancellation and timeout control
 - `source *dagger.Directory` - Source directory containing test scripts and fixtures
-- `imageTarball *dagger.File` - (Optional) Pre-built OCI image tarball. If not provided, should call `Build()` internally
+- `buildArtifact *dagger.File` - (Optional) Pre-built OCI image tarball. If not provided, should call `Build()` internally
 
 **Return Values**:
 - `string` - Test output (stdout) from test execution
@@ -215,7 +215,7 @@ func (m *Goserv) UnitTest(
 **Usage Notes**:
 - Should start the application container as a service
 - Execute test scripts (e.g., `tests/unit_test.sh`) against the running service
-- If no `imageTarball` is provided, build from source automatically
+- If no `buildArtifact` is provided, build from source automatically
 - Tests should verify basic application functionality
 
 ---
@@ -229,16 +229,16 @@ func (m *Goserv) UnitTest(
 func (m *Goserv) IntegrationTest(
     ctx context.Context,
     source *dagger.Directory,
-    targetHost string,
-    targetPort string,
+    targetUrl string,
+    deploymentContext *dagger.File,
 ) (string, error)
 ```
 
 **Parameters**:
 - `ctx context.Context` - Go context for cancellation and timeout control
 - `source *dagger.Directory` - Source directory containing integration test scripts
-- `targetHost string` - (Optional, default: `localhost`) Hostname where the application is deployed
-- `targetPort string` - (Optional, default: `8080`) Port where the application is listening
+- `targetUrl string` - (Optional) Full URL where the application is deployed (e.g., `http://localhost:8080`)
+- `deploymentContext *dagger.File` - (Optional) Deployment context file from Deploy function containing endpoint information
 
 **Return Values**:
 - `string` - Test output (stdout) from test execution
@@ -263,7 +263,7 @@ func (m *Goserv) Deliver(
     source *dagger.Directory,
     containerRepository string,
     helmRepository string,
-    imageTarball *dagger.File,
+    buildArtifact *dagger.File,
     releaseCandidate bool,
 ) (string, error)
 ```
@@ -273,7 +273,7 @@ func (m *Goserv) Deliver(
 - `source *dagger.Directory` - Source directory containing Helm charts and application files
 - `containerRepository string` - (Optional, default: `ttl.sh`) Container registry URL (e.g., `ghcr.io/org`, `docker.io/username`)
 - `helmRepository string` - (Optional, default: `oci://ttl.sh`) Helm chart repository URL (OCI or classic HTTP)
-- `imageTarball *dagger.File` - (Optional) Pre-built OCI image tarball. If not provided, should build from source
+- `buildArtifact *dagger.File` - (Optional) Pre-built OCI image tarball. If not provided, should build from source
 - `releaseCandidate bool` - (Optional) Whether this is a release candidate (affects version tagging)
 
 **Return Values**:
@@ -298,12 +298,12 @@ func (m *Goserv) Deliver(
 func (m *Goserv) Deploy(
     ctx context.Context,
     source *dagger.Directory,
+    awsconfig *dagger.Secret,
     kubeconfig *dagger.Secret,
     helmRepository string,
-    releaseName string,
-    namespace string,
+    containerRepository string,
     releaseCandidate bool,
-) (string, error)
+) (*dagger.File, error)
 ```
 
 **Annotations**:
@@ -312,14 +312,14 @@ func (m *Goserv) Deploy(
 **Parameters**:
 - `ctx context.Context` - Go context for cancellation and timeout control
 - `source *dagger.Directory` - Source directory containing deployment manifests
-- `kubeconfig *dagger.Secret` - Kubernetes configuration file content (as a secret for security)
+- `awsconfig *dagger.Secret` - (Optional) AWS configuration for cloud deployments
+- `kubeconfig *dagger.Secret` - (Optional) Kubernetes configuration file content (as a secret for security)
 - `helmRepository string` - (Optional, default: `oci://ttl.sh`) Helm chart repository URL
-- `releaseName string` - (Optional, default: `goserv`) Helm release name
-- `namespace string` - (Optional, default: `goserv`) Kubernetes namespace for deployment
+- `containerRepository string` - (Optional, default: `ttl.sh`) Container repository URL for pulling images
 - `releaseCandidate bool` - (Optional) Whether to deploy release candidate version
 
 **Return Values**:
-- `string` - Deployment output (e.g., Helm release info, kubectl output)
+- `*dagger.File` - Deployment context file containing deployment metadata (JSON format with endpoint, namespace, release name, version)
 - `error` - Error if deployment fails
 
 **Usage Notes**:
@@ -346,6 +346,7 @@ func (m *Goserv) Validate(
     namespace string,
     expectedVersion string,
     releaseCandidate bool,
+    deploymentContext *dagger.File,
 ) (string, error)
 ```
 
@@ -357,6 +358,7 @@ func (m *Goserv) Validate(
 - `namespace string` - (Optional, default: `goserv`) Kubernetes namespace to validate
 - `expectedVersion string` - (Optional) Expected version to validate. If not provided, read from `VERSION` file
 - `releaseCandidate bool` - (Optional) Whether validating a release candidate
+- `deploymentContext *dagger.File` - (Optional) Deployment context file from Deploy function
 
 **Return Values**:
 - `string` - Validation output (test results, health check output)
@@ -404,8 +406,7 @@ Parameters marked with `// +optional` can be omitted when calling the function. 
 - `helmRepository`: `oci://ttl.sh`
 - `releaseName`: `goserv`
 - `namespace`: `goserv`
-- `targetHost`: `localhost`
-- `targetPort`: `8080`
+- `targetUrl`: Empty string (use deploymentContext endpoint if available)
 
 ### Version Handling
 All functions that work with versions should:
@@ -446,7 +447,7 @@ dagger call build --source=. --release-candidate=true
 
 ### Running Tests with Pre-built Image
 ```bash
-dagger call build --source=. | dagger call unit-test --source=. --image-tarball=-
+dagger call build --source=. | dagger call unit-test --source=. --build-artifact=-
 ```
 
 ### Full Deployment Pipeline
@@ -455,23 +456,21 @@ dagger call build --source=. | dagger call unit-test --source=. --image-tarball=
 IMAGE=$(dagger call build --source=. --release-candidate=false)
 
 # Test
-dagger call unit-test --source=. --image-tarball="$IMAGE"
-dagger call integration-test --source=. --target-host=staging.example.com
+dagger call unit-test --source=. --build-artifact="$IMAGE"
+dagger call integration-test --source=. --target-url=http://staging.example.com
 
 # Deliver
-dagger call deliver --source=. --image-tarball="$IMAGE" \
+dagger call deliver --source=. --build-artifact="$IMAGE" \
   --container-repository=ghcr.io/myorg \
   --helm-repository=oci://ghcr.io/myorg/charts
 
 # Deploy & Validate
 dagger call deploy --source=. \
   --kubeconfig=env:KUBECONFIG \
-  --helm-repository=oci://ghcr.io/myorg/charts \
-  --namespace=production
+  --helm-repository=oci://ghcr.io/myorg/charts
 
 dagger call validate --source=. \
-  --kubeconfig=env:KUBECONFIG \
-  --namespace=production
+  --kubeconfig=env:KUBECONFIG
 ```
 
 ---
@@ -521,19 +520,17 @@ dagger -m cicd call build --source=. \
 
 # Use tarball in subsequent functions
 dagger -m cicd call unit-test --source=. \
-  --image-tarball=./build/goserv-image.tar
+  --build-artifact=./build/goserv-image.tar
 
 dagger -m cicd call deliver --source=. \
-  --image-tarball=./build/goserv-image.tar \
+  --build-artifact=./build/goserv-image.tar \
   --release-candidate=true
 ```
 
 **Passing Kubeconfig as Secret**:
 ```bash
 dagger -m cicd call deploy --source=. \
-  --kubeconfig=file:${HOME}/.kube/config \
-  --release-name=goserv \
-  --namespace=goserv
+  --kubeconfig=file:${HOME}/.kube/config
 ```
 
 **Conditional Release Candidate Flag**:
@@ -549,8 +546,7 @@ dagger -m cicd call deploy --source=. \
 ```bash
 # Use host.docker.internal to reach localhost from Dagger container
 dagger -m cicd call integration-test --source=. \
-  --target-host=host.docker.internal \
-  --target-port=8080
+  --target-url=http://host.docker.internal:8080
 ```
 
 ### When Migrating from Shell Scripts to Dagger Functions
