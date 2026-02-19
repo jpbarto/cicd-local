@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "functions": {
     "Build": {
-      "description": "Builds a multi-architecture Docker image and exports it as an OCI tarball",
+      "description": "Builds the repository and returns the built artifacts",
       "returns": "File",
       "parameters": {
         "golang": [
@@ -25,7 +25,7 @@
       }
     },
     "UnitTest": {
-      "description": "Runs unit tests against the built application container",
+      "description": "Runs unit tests against the built artifacts",
       "returns": "string",
       "parameters": {
         "golang": [
@@ -54,28 +54,24 @@
         "golang": [
           { "name": "ctx", "type": "context.Context", "required": true },
           { "name": "source", "type": "*dagger.Directory", "required": true },
-          { "name": "targetHost", "type": "string", "required": false },
-          { "name": "targetPort", "type": "string", "required": false }
+          { "name": "targetUrl", "type": "string", "required": false }
         ],
         "python": [
           { "name": "source", "type": "dagger.Directory", "required": true },
-          { "name": "target_host", "type": "str", "required": false },
-          { "name": "target_port", "type": "str", "required": false }
+          { "name": "target_url", "type": "str", "required": false }
         ],
         "java": [
           { "name": "source", "type": "Directory", "required": true },
-          { "name": "targetHost", "type": "String", "required": false },
-          { "name": "targetPort", "type": "String", "required": false }
+          { "name": "targetUrl", "type": "String", "required": false }
         ],
         "typescript": [
           { "name": "source", "type": "Directory", "required": true },
-          { "name": "targetHost", "type": "string", "required": false },
-          { "name": "targetPort", "type": "string", "required": false }
+          { "name": "targetUrl", "type": "string", "required": false }
         ]
       }
     },
     "Deliver": {
-      "description": "Publishes container images and Helm charts to artifact repositories",
+      "description": "Publishes generated artifacts to artifact repositories",
       "returns": "string",
       "parameters": {
         "golang": [
@@ -110,40 +106,40 @@
       }
     },
     "Deploy": {
-      "description": "Deploys the application to a Kubernetes cluster using Helm",
+      "description": "Deploys the repository",
       "returns": "string",
       "parameters": {
         "golang": [
           { "name": "ctx", "type": "context.Context", "required": true },
           { "name": "source", "type": "*dagger.Directory", "required": true },
+          { "name": "awsconfig", "type": "*dagger.Secret", "required": false },
           { "name": "kubeconfig", "type": "*dagger.Secret", "required": true },
           { "name": "helmRepository", "type": "string", "required": false },
-          { "name": "releaseName", "type": "string", "required": false },
-          { "name": "namespace", "type": "string", "required": false },
+          { "name": "containerRepository", "type": "string", "required": false },
           { "name": "releaseCandidate", "type": "bool", "required": false }
         ],
         "python": [
           { "name": "source", "type": "dagger.Directory", "required": true },
+          { "name": "awsconfig", "type": "dagger.Secret", "required": false },
           { "name": "kubeconfig", "type": "dagger.Secret", "required": true },
           { "name": "helm_repository", "type": "str", "required": false },
-          { "name": "release_name", "type": "str", "required": false },
-          { "name": "namespace", "type": "str", "required": false },
+          { "name": "containerRepository", "type": "string", "required": false },
           { "name": "release_candidate", "type": "bool", "required": false }
         ],
         "java": [
           { "name": "source", "type": "Directory", "required": true },
+          { "name": "awsconfig", "type": "Secret", "required": false },
           { "name": "kubeconfig", "type": "Secret", "required": true },
           { "name": "helmRepository", "type": "String", "required": false },
-          { "name": "releaseName", "type": "String", "required": false },
-          { "name": "namespace", "type": "String", "required": false },
+          { "name": "containerRepository", "type": "string", "required": false },
           { "name": "releaseCandidate", "type": "boolean", "required": false }
         ],
         "typescript": [
           { "name": "source", "type": "Directory", "required": true },
+          { "name": "awsconfig", "type": "Secret", "required": false },
           { "name": "kubeconfig", "type": "Secret", "required": true },
           { "name": "helmRepository", "type": "string", "required": false },
-          { "name": "releaseName", "type": "string", "required": false },
-          { "name": "namespace", "type": "string", "required": false },
+          { "name": "containerRepository", "type": "string", "required": false },
           { "name": "releaseCandidate", "type": "boolean", "required": false }
         ]
       }
