@@ -86,12 +86,42 @@ colima start acme-local --cpu 4 --memory 8 --disk 50 --kubernetes
 ### Basic Command Structure
 
 ```bash
-cicd-local <pipeline> [OPTIONS]
+cicd-local <command> [OPTIONS]
 ```
 
-The `cicd-local` command should be run from your project's root directory. It will execute the specified pipeline on your current project.
+The `cicd-local` command should be run from your project's root directory. It will execute the specified command on your current project.
 
-### Available Pipelines
+### Available Commands
+
+#### Validate Contract
+
+Validates that your project's Dagger functions conform to the cicd-local contract specification. This ensures your CI/CD functions are compatible with the cicd-local pipelines.
+
+```bash
+# Validate current directory
+cicd-local validate
+
+# Validate specific project
+cicd-local validate /path/to/project
+
+# Run from project directory
+cd myproject && cicd-local validate
+```
+
+The validation checks:
+- **Function Existence**: All required functions are present (Build, UnitTest, IntegrationTest, Deliver, Deploy, Validate)
+- **Function Signatures**: Parameter names match the contract
+- **Parameter Types**: Parameter types are correct for the detected language (Go, Python, Java, TypeScript)
+
+**Supported Languages:**
+- Go (Golang)
+- Python
+- Java
+- TypeScript
+
+**Exit Codes:**
+- `0` - All validations passed
+- `1` - Validation failures or errors
 
 #### CI Pipeline
 
@@ -315,6 +345,34 @@ kill <PID>
 - Your project must have a `VERSION` file in the root directory
 - Your project must have Dagger modules in a `cicd` directory
 - Dagger modules must implement the expected functions (build, unit-test, deliver, deploy, validate, integration-test)
+
+## Dagger Contract Validation
+
+To ensure your project's Dagger functions are compatible with cicd-local pipelines, use the contract validation tool:
+
+```bash
+cicd-local validate
+```
+
+The validator checks that your Dagger functions conform to the standardized contract for:
+- Function names and signatures
+- Parameter names and types
+- Return types
+
+Supported languages: Go, Python, Java, TypeScript
+
+For detailed information about contract validation, see [VALIDATION.md](VALIDATION.md).
+
+For the complete contract specification and example implementations, see [cicd_dagger_contract/README.md](cicd_dagger_contract/README.md).
+
+## Additional Resources
+
+- **[VALIDATION.md](VALIDATION.md)** - Detailed guide for contract validation
+- **[cicd_dagger_contract/README.md](cicd_dagger_contract/README.md)** - Complete contract specification
+- **[cicd_dagger_contract/golang/](cicd_dagger_contract/golang/)** - Go implementation examples
+- **[cicd_dagger_contract/python/](cicd_dagger_contract/python/)** - Python implementation examples
+- **[cicd_dagger_contract/java/](cicd_dagger_contract/java/)** - Java implementation examples
+- **[cicd_dagger_contract/typescript/](cicd_dagger_contract/typescript/)** - TypeScript implementation examples
 
 ## License
 

@@ -2,6 +2,79 @@
 
 This directory contains the standardized function signatures (contract) for the Dagger CI/CD pipeline. These function signatures define the interface that any implementation must adhere to, ensuring consistency across different deployment strategies (e.g., Helm-based, ArgoCD-based).
 
+## Validating Contract Compliance
+
+To ensure your project's Dagger functions conform to this contract, use the validation tool:
+
+```bash
+# Validate from your project directory
+cd /path/to/your/project
+cicd-local validate
+
+# Or specify the project path
+cicd-local validate /path/to/your/project
+```
+
+The validator will:
+1. **Detect the language** of your Dagger module (Go, Python, Java, or TypeScript)
+2. **Check function existence** - Verify all required functions are present:
+   - Build
+   - UnitTest
+   - IntegrationTest
+   - Deliver
+   - Deploy
+   - Validate
+3. **Validate signatures** - Ensure parameter names and types match the contract for your language
+4. **Provide detailed feedback** - Report any missing functions or incorrect signatures
+
+### Example Output
+
+```
+========================================
+Dagger Contract Validation
+========================================
+
+ℹ Project Directory: /Users/user/myproject
+ℹ CICD Directory: /Users/user/myproject/cicd
+
+✓ CICD directory found
+✓ Detected language: golang
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Validating Function Signatures
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ Function 'Build' signature matches contract
+✓ Function 'UnitTest' signature matches contract
+✓ Function 'IntegrationTest' signature matches contract
+✓ Function 'Deliver' signature matches contract
+✓ Function 'Deploy' signature matches contract
+✓ Function 'Validate' signature matches contract
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Validation Summary
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Total Checks:  6
+Passed:        6
+Failed:        0
+
+✓ All function signatures conform to the cicd-local contract!
+
+ℹ Your Dagger module is compatible with cicd-local pipelines
+```
+
+## Example Implementations
+
+This directory contains reference implementations in multiple languages:
+
+- **golang/** - Go examples showing the canonical contract format
+- **java/** - Java SDK examples with equivalent implementations
+- **python/** - Python SDK examples with idiomatic naming (snake_case)
+- **typescript/** - TypeScript SDK examples with type annotations
+
+Each subdirectory contains example files demonstrating how to implement the six required functions.
+
 ## Overview
 
 The CI/CD pipeline consists of six core functions that represent different stages of the software delivery lifecycle. Each function has a well-defined signature with specific parameters and return types that enable composability and flexibility.

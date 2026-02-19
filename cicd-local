@@ -6,19 +6,38 @@
 
 show_usage() {
     cat << 'EOF'
-Usage: cicd-local <pipeline> [OPTIONS]
+Usage: cicd-local <command> [OPTIONS]
 
-Available Pipelines:
+Available Commands:
+  validate    Validate Dagger contract compliance
   ci          Build and test code changes
   deliver     Build and publish artifacts to repositories
   deploy      Deploy application to Kubernetes cluster
   iat         Integration and Acceptance Testing
   staging     Blue-green deployment testing
 
-Options vary by pipeline. Use --help with any pipeline for details:
-  cicd-local <pipeline> --help
+Options vary by command. Use --help with any command for details:
+  cicd-local <command> --help
 
-Pipeline Details:
+Command Details:
+
+VALIDATE (validate)
+  Validates that a project's Dagger functions conform to the cicd-local contract.
+  Checks function signatures, parameter names, and parameter types for:
+    - Build
+    - UnitTest
+    - IntegrationTest
+    - Deliver
+    - Deploy
+    - Validate
+
+  Options:
+    [PROJECT_DIR]   Path to project directory to validate (default: current directory)
+
+  Examples:
+    cicd-local validate                    # Validate current directory
+    cicd-local validate /path/to/project   # Validate specific project
+    cd myproject && cicd-local validate    # Validate from project directory
 
 CI PIPELINE (ci)
   Build and test code changes, optionally delivering artifacts on PR merge.
@@ -94,10 +113,10 @@ For more information on a specific pipeline, run:
 EOF
 }
 
-PIPELINE=$1
+COMMAND=$1
 
 # Check for help flag or no arguments
-if [ -z "$PIPELINE" ] || [ "$PIPELINE" = "--help" ] || [ "$PIPELINE" = "-h" ]; then
+if [ -z "$COMMAND" ] || [ "$COMMAND" = "--help" ] || [ "$COMMAND" = "-h" ]; then
     show_usage
     exit 0
 fi
@@ -110,11 +129,19 @@ while [ -L "$SCRIPT_PATH" ]; do
     [[ $SCRIPT_PATH != /* ]] && SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_PATH"
 done
 SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_PATH")" && pwd)"
-PIPELINE_SCRIPT="$SCRIPT_DIR/local_${PIPELINE}_pipeline.sh"
+
+# Handle validate command separately
+if [ "$COMMAND" = "validate" ]; then
+    PROJECT_DIR="${2:-$(pwd)}"
+    exec "$SCRIPT_DIR/validate_contract.sh" "$PROJECT_DIR"
+fi
+
+# Handle pipeline commands
+PIPELINE_SCRIPT="$SCRIPT_DIR/local_${COMMAND}_pipeline.sh"
 
 if [ ! -f "$PIPELINE_SCRIPT" ]; then
-    echo "Error: Pipeline '$PIPELINE' not found"
-    echo "Available pipelines: ci, iat, staging, deliver, deploy"
+    echo "Error: Command '$COMMAND' not found"
+    echo "Available commands: validate, ci, iat, staging, deliver, deploy"
     exit 1
 fi
 
