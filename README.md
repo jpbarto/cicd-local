@@ -1,242 +1,144 @@
-# CICD Local
+# cicd-local
 
-A collection of shell scripts for running CI/CD pipelines locally using Dagger. This project enables developers to test and validate CI/CD workflows on their local machines before pushing to remote CI/CD systems.
+Local CI/CD pipeline toolkit for validating, building, testing, and deploying applications using Dagger.
 
 ## Overview
 
-The `cicd-local` dispatcher script provides a unified interface for executing various pipeline stages locally:
+`cicd-local` provides a standardized set of pipeline scripts that work with Dagger CI/CD functions. It enables developers to:
 
-- **CI Pipeline** - Build and test code changes
-- **Deliver Pipeline** - Publish container images and Helm charts to repositories
-- **Deploy Pipeline** - Deploy applications to Kubernetes clusters
-- **IAT Pipeline** - Integration and Acceptance Testing with full deployment validation
-- **Staging Pipeline** - Blue-green deployment testing and rollback validation
+- ✅ **Validate** Dagger functions against a standardized contract
+- 🏗️ **Build** multi-architecture container images locally
+- 🧪 **Test** applications with unit and integration tests
+- 📦 **Deliver** artifacts to container and Helm repositories
+- 🚀 **Deploy** to local or remote Kubernetes clusters
+- 🔄 **Simulate** complete CI/CD pipelines before committing
 
-## Prerequisites
+## Quick Start
 
-### Required Tools
+### Prerequisites
 
-- **Dagger CLI** - For executing pipeline functions
-  ```bash
-  # macOS
-  brew install dagger/tap/dagger
-  
-  # Or use curl
-  curl -L https://dl.dagger.io/dagger/install.sh | sh
-  ```
+- [Dagger](https://dagger.io) - CI/CD pipeline engine
+- [Docker](https://docker.com) or [Colima](https://github.com/abiosoft/colima) - Container runtime
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) - Kubernetes CLI
+- Git - Version control
 
-- **Docker or Colima** - Container runtime (Colima recommended for local Kubernetes)
-  ```bash
-  brew install colima
-  ```
-
-- **kubectl** - Kubernetes command-line tool (for deploy/IAT/staging pipelines)
-  ```bash
-  brew install kubectl
-  ```
-
-### Optional Configuration
-
-Create a `local_cicd.env` file in the cicd-local directory to set default environment variables:
+### Installation
 
 ```bash
-# Container and Helm repository URLs
-CONTAINER_REPOSITORY_URL=ttl.sh
-HELM_REPOSITORY_URL=oci://ttl.sh
+# Clone repository
+git clone https://github.com/your-org/cicd-local.git ~/cicd-local
 
-# Kubernetes configuration
-COLIMA_PROFILE=acme-local
-RELEASE_NAME=goserv
-NAMESPACE=goserv
+# Add to PATH
+echo 'export PATH="$HOME/cicd-local:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# Verify installation
+cicd-local --help
 ```
 
-### For Kubernetes Pipelines (IAT, Deploy, Staging)
-
-Create and start a Colima profile with Kubernetes:
+### Setup Kubernetes (Colima)
 
 ```bash
+# Install Colima (macOS/Linux)
+brew install colima
+
+# Start local cluster
 colima start acme-local --cpu 4 --memory 8 --disk 50 --kubernetes
+
+# Verify cluster
+kubectl get nodes
 ```
-
-## Installation
-
-1. Clone or download this repository to a location on your system:
-   ```bash
-   git clone <repository-url> ~/cicd-local
-   ```
-
-2. Make the cicd-local script executable:
-   ```bash
-   chmod +x ~/cicd-local/cicd-local
-   ```
-
-3. Add the cicd-local directory to your PATH:
-   ```bash
-   # Add to ~/.bashrc or ~/.zshrc
-   export PATH="$HOME/cicd-local:$PATH"
-   ```
-
-4. Reload your shell configuration:
-   ```bash
-   source ~/.bashrc  # or ~/.zshrc
-   ```
 
 ## Usage
 
-### Basic Command Structure
+### Validate Contract
+
+Ensure your Dagger functions conform to the cicd-local contract:
 
 ```bash
-cicd-local <command> [OPTIONS]
-```
-
-The `cicd-local` command should be run from your project's root directory. It will execute the specified command on your current project.
-
-### Available Commands
-
-#### Validate Contract
-
-Validates that your project's Dagger functions conform to the cicd-local contract specification. This ensures your CI/CD functions are compatible with the cicd-local pipelines.
-
-```bash
-# Validate current directory
 cicd-local validate
-
-# Validate specific project
-cicd-local validate /path/to/project
-
-# Run from project directory
-cd myproject && cicd-local validate
 ```
 
-The validation checks:
-- **Function Existence**: All required functions are present (Build, UnitTest, IntegrationTest, Deliver, Deploy, Validate)
-- **Function Signatures**: Parameter names match the contract
-- **Parameter Types**: Parameter types are correct for the detected language (Go, Python, Java, TypeScript)
+### Run CI Pipeline
 
-**Supported Languages:**
-- Go (Golang)
-- Python
-- Java
-- TypeScript
-
-**Exit Codes:**
-- `0` - All validations passed
-- `1` - Validation failures or errors
-
-#### CI Pipeline
-
-Builds container images and runs unit tests. Use this to validate code changes locally before committing.
+Build and test your application:
 
 ```bash
-# Basic commit pipeline (build + test)
+# Commit pipeline (build + test)
 cicd-local ci
 
 # PR merge pipeline (build + test + deliver)
 cicd-local ci --pipeline-trigger=pr-merge
-
-# Skip tests during build
-cicd-local ci --skip-tests
-
-# Specify custom repositories
-cicd-local ci --container-repository=myregistry.io --helm-repository=oci://myregistry.io
 ```
 
-**Options:**
-- `--pipeline-trigger <type>` - Pipeline trigger: `commit` (default) or `pr-merge`
-- `--skip-tests` - Skip unit tests
-- `--container-repository <url>` - Container repository URL (default: ttl.sh)
-- `--helm-repository <url>` - Helm OCI repository URL (default: oci://ttl.sh)
-- `--help, -h` - Show help message
+### Deploy and Test
 
-#### Deliver Pipeline
-
-Builds and publishes container images and Helm charts to repositories.
+Deploy to local Kubernetes and run integration tests:
 
 ```bash
-# Deliver artifacts
-cicd-local deliver
-
-# Deliver release candidate
-cicd-local deliver --release-candidate
-
-# Skip build and use existing tarball
-cicd-local deliver --skip-build
-
-# Custom repositories
-cicd-local deliver --container-repository=myregistry.io --helm-repository=oci://myregistry.io
-```
-
-**Options:**
-- `--release-candidate, -rc` - Build as release candidate (appends -rc to version)
-- `--container-repository <url>` - Container repository URL (default: ttl.sh)
-- `--helm-repository <url>` - Helm OCI repository URL (default: oci://ttl.sh)
-- `--skip-build` - Skip build step (use existing tarball)
-- `--help, -h` - Show help message
-
-#### Deploy Pipeline
-
-Deploys the application to a Kubernetes cluster and validates the deployment.
-
-```bash
-# Deploy application
-cicd-local deploy
-
-# Deploy release candidate
-cicd-local deploy --release-candidate
-
-# Deploy to custom namespace
-cicd-local deploy --namespace=staging --release-name=myapp
-
-# Skip validation
-cicd-local deploy --skip-validation
-
-# Use different Colima profile
-cicd-local deploy --colima-profile=my-cluster
-```
-
-**Options:**
-- `--release-candidate, -rc` - Deploy release candidate version
-- `--release-name <name>` - Helm release name (default: goserv)
-- `--namespace <name>` - Kubernetes namespace (default: goserv)
-- `--colima-profile <name>` - Colima profile to use (default: acme-local)
-- `--skip-validation` - Skip validation step after deployment
-- `--help, -h` - Show help message
-
-#### IAT (Integration and Acceptance Testing) Pipeline
-
-Ensures local Kubernetes environment is running, deploys the application, and executes integration tests.
-
-```bash
-# Full IAT pipeline
+# Full integration testing
 cicd-local iat
 
-# Skip deployment (use existing deployment)
-cicd-local iat --skip-deploy
+# Just deployment
+cicd-local deploy
 ```
 
-**Options:**
-- `--skip-deploy` - Skip deployment step (use existing deployment)
-- `--help, -h` - Show help message
+### Blue-Green Testing
 
-**Note:** IAT pipeline always uses release candidate (-rc) builds.
-
-#### Staging Pipeline
-
-Performs blue-green deployment testing by deploying current version, previous version, and current version again. Validates rollback scenarios.
+Validate deployment rollback scenarios:
 
 ```bash
-# Run staging validation
 cicd-local staging
 ```
 
-**Options:**
-- `--help, -h` - Show help message
+## Available Commands
 
-**Note:** Staging pipeline always uses release candidate (-rc) builds and requires at least one git tag in the repository.
+| Command | Description |
+|---------|-------------|
+| `validate` | Validate Dagger functions against contract |
+| `ci` | Build and test (optionally deliver artifacts) |
+| `deliver` | Publish container images and Helm charts |
+| `deploy` | Deploy to Kubernetes cluster |
+| `iat` | Integration and acceptance testing |
+| `staging` | Blue-green deployment testing |
+
+Run any command with `--help` for detailed usage:
+
+```bash
+cicd-local ci --help
+```
+
+## Project Requirements
+
+Your project must have:
+
+1. **VERSION file** in root directory containing semantic version:
+   ```
+   1.2.3
+   ```
+
+2. **cicd/ directory** with Dagger module implementing six required functions:
+   - `Build` - Build multi-architecture container images
+   - `UnitTest` - Run unit tests
+   - `IntegrationTest` - Run integration tests
+   - `Deliver` - Publish artifacts to repositories
+   - `Deploy` - Deploy to Kubernetes
+   - `Validate` - Validate deployment health
+
+3. **Contract compliance** - Verify with `cicd-local validate`
+
+## Supported Languages
+
+- **Go** (Golang)
+- **Python**
+- **Java**
+- **TypeScript**
+
+Example implementations provided in `cicd_dagger_contract/` directory.
 
 ## Common Workflows
 
-### Local Development Workflow
+### Local Development
 
 ```bash
 # 1. Make code changes
@@ -246,138 +148,168 @@ cicd-local ci
 # 3. If tests pass, deliver artifacts
 cicd-local ci --pipeline-trigger=pr-merge
 
-# 4. Deploy and test integration
+# 4. Deploy and run integration tests
 cicd-local iat
 
 # 5. Validate blue-green deployment
 cicd-local staging
 ```
 
-### Quick Build and Test
+### Quick Iteration
 
 ```bash
-# Build and test current changes
+# Fast build and test cycle
 cicd-local ci
+
+# Skip tests for faster builds
+cicd-local ci --skip-tests
 ```
 
-### Full Pipeline Simulation
+### Custom Repositories
 
 ```bash
-# Run complete CI/CD pipeline
-cicd-local ci --pipeline-trigger=pr-merge
-cicd-local iat
-cicd-local staging
+# Use your own registries
+cicd-local ci --pipeline-trigger=pr-merge \
+  --container-repository=ghcr.io/myorg \
+  --helm-repository=oci://ghcr.io/myorg
+
+cicd-local deploy \
+  --container-repository=ghcr.io/myorg \
+  --helm-repository=oci://ghcr.io/myorg
 ```
 
-## Project Structure
+## Configuration
+
+Create `local_cicd.env` in your project or export environment variables:
+
+```bash
+# Container and Helm repositories
+CONTAINER_REPOSITORY_URL="ttl.sh"
+HELM_REPOSITORY_URL="oci://ttl.sh"
+
+# Kubernetes configuration
+COLIMA_PROFILE="acme-local"
+RELEASE_NAME="goserv"
+NAMESPACE="goserv"
+```
+
+## Documentation
+
+- **[USER_GUIDE.md](docs/USER_GUIDE.md)** - Complete usage guide with all commands, options, and workflows
+- **[CONTRACT_VALIDATION.md](docs/CONTRACT_VALIDATION.md)** - Detailed validation guide with examples
+- **[CONTRACT_REFERENCE.md](docs/CONTRACT_REFERENCE.md)** - Complete contract specification and function signatures
+- **[DEPLOYMENT_CONTEXT.md](docs/DEPLOYMENT_CONTEXT.md)** - Advanced deployment context pattern
+
+## Example Implementations
+
+Reference implementations for all supported languages:
 
 ```
-cicd-local/
-├── cicd-local                    # Main dispatcher script
-├── local_ci_pipeline.sh          # CI pipeline (build + test)
-├── local_deliver_pipeline.sh     # Artifact delivery pipeline
-├── local_deploy_pipeline.sh      # Deployment pipeline
-├── local_iat_pipeline.sh         # Integration testing pipeline
-├── local_staging_pipeline.sh     # Staging/rollback testing pipeline
-├── local_cicd.env                # Environment configuration (optional)
-└── README.md                     # This file
+cicd_dagger_contract/
+├── golang/          # Go examples
+├── python/          # Python examples
+├── java/            # Java examples
+└── typescript/      # TypeScript examples
 ```
 
-## Environment Variables
-
-The following environment variables can be set in `local_cicd.env` or exported in your shell:
-
-- `CONTAINER_REPOSITORY_URL` - Default container repository (default: ttl.sh)
-- `HELM_REPOSITORY_URL` - Default Helm repository (default: oci://ttl.sh)
-- `COLIMA_PROFILE` - Colima profile name (default: acme-local)
-- `RELEASE_NAME` - Kubernetes release name (default: goserv)
-- `NAMESPACE` - Kubernetes namespace (default: goserv)
+Each directory contains complete examples for all six required functions.
 
 ## Troubleshooting
 
 ### Colima Not Running
 
-If you see errors about Colima not running:
-
 ```bash
-# Check Colima status
 colima list
-
-# Start Colima profile
 colima start acme-local
 ```
 
-### Kubectl Context Issues
-
-If kubectl cannot connect to the cluster:
+### Validation Fails
 
 ```bash
-# List available contexts
-kubectl config get-contexts
+# Review detailed errors
+cicd-local validate
 
-# Switch to correct context
-kubectl config use-context colima-acme-local
+# Compare with examples
+ls cicd_dagger_contract/golang/
 ```
 
-### Build Artifacts Not Found
-
-If delivery pipeline cannot find build artifacts:
+### Port Conflicts
 
 ```bash
-# Run CI pipeline first to build artifacts
-cicd-local ci --pipeline-trigger=pr-merge
-```
-
-### Port Forward Fails
-
-If IAT pipeline fails to establish port forward:
-
-```bash
-# Check if port is already in use
+# Check port usage
 lsof -i :8080
 
-# Kill process using the port
+# Kill blocking process
 kill <PID>
 ```
 
-## Requirements
+See [USER_GUIDE.md](docs/USER_GUIDE.md) for comprehensive troubleshooting.
 
-- Your project must have a `VERSION` file in the root directory
-- Your project must have Dagger modules in a `cicd` directory
-- Dagger modules must implement the expected functions (build, unit-test, deliver, deploy, validate, integration-test)
+## Architecture
 
-## Dagger Contract Validation
-
-To ensure your project's Dagger functions are compatible with cicd-local pipelines, use the contract validation tool:
-
-```bash
-cicd-local validate
+```
+cicd-local/
+├── cicd-local                    # Main dispatcher
+├── local_ci_pipeline.sh          # CI pipeline
+├── local_deliver_pipeline.sh     # Artifact delivery
+├── local_deploy_pipeline.sh      # Deployment
+├── local_iat_pipeline.sh         # Integration testing
+├── local_staging_pipeline.sh     # Blue-green testing
+├── validate_contract.sh          # Contract validation
+├── contract.json                 # Contract specification
+├── docs/                         # Documentation
+│   ├── USER_GUIDE.md
+│   ├── CONTRACT_VALIDATION.md
+│   ├── CONTRACT_REFERENCE.md
+│   └── DEPLOYMENT_CONTEXT.md
+└── cicd_dagger_contract/         # Example implementations
+    ├── golang/
+    ├── python/
+    ├── java/
+    └── typescript/
 ```
 
-The validator checks that your Dagger functions conform to the standardized contract for:
-- Function names and signatures
-- Parameter names and types
-- Return types
+## Contributing
 
-Supported languages: Go, Python, Java, TypeScript
+Contributions welcome! Please ensure:
 
-For detailed information about contract validation, see [VALIDATION.md](VALIDATION.md).
-
-For the complete contract specification and example implementations, see [cicd_dagger_contract/README.md](cicd_dagger_contract/README.md).
-
-## Additional Resources
-
-- **[VALIDATION.md](VALIDATION.md)** - Detailed guide for contract validation
-- **[cicd_dagger_contract/README.md](cicd_dagger_contract/README.md)** - Complete contract specification
-- **[cicd_dagger_contract/golang/](cicd_dagger_contract/golang/)** - Go implementation examples
-- **[cicd_dagger_contract/python/](cicd_dagger_contract/python/)** - Python implementation examples
-- **[cicd_dagger_contract/java/](cicd_dagger_contract/java/)** - Java implementation examples
-- **[cicd_dagger_contract/typescript/](cicd_dagger_contract/typescript/)** - TypeScript implementation examples
+1. Contract changes are backward compatible
+2. All four language examples are updated
+3. Documentation is updated
+4. Tests pass with `cicd-local validate`
 
 ## License
 
 [Add your license information here]
 
-## Contributing
+## Getting Started
 
-[Add contribution guidelines here]
+1. **Install cicd-local**: Follow [installation](#installation) instructions
+2. **Setup Kubernetes**: Configure [Colima](#setup-kubernetes-colima)
+3. **Validate project**: Run `cicd-local validate`
+4. **Read documentation**: Start with [USER_GUIDE.md](docs/USER_GUIDE.md)
+5. **Run pipelines**: Try `cicd-local ci` and `cicd-local iat`
+
+## Support
+
+- **Documentation**: See `docs/` directory
+- **Examples**: Browse `cicd_dagger_contract/` for your language
+- **Issues**: Check validation output and troubleshooting guide
+- **Debug**: Run with `dagger run --debug` for detailed logs
+
+## Features
+
+- ✅ Contract-based validation for consistency
+- 🔧 Multi-language support (Go, Python, Java, TypeScript)
+- 🏗️ Multi-architecture image builds
+- 🧪 Integrated testing (unit, integration, acceptance)
+- 📦 Artifact management (containers, Helm charts)
+- 🚀 Kubernetes deployment with validation
+- 🔄 Blue-green deployment testing
+- 🔗 Deployment context for inter-function communication
+- 📊 Detailed validation reporting
+- 🎯 Local-first development workflow
+
+---
+
+**Ready to get started?** Read the [User Guide](docs/USER_GUIDE.md) for comprehensive documentation.
