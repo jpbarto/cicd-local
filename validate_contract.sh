@@ -15,8 +15,14 @@
 set -e  # Exit on error
 # Note: We don't use set -u here because associative arrays in loops can trigger it
 
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the directory where this script is located (resolving symlinks)
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+while [ -L "$SCRIPT_PATH" ]; do
+    SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_PATH")" && pwd)"
+    SCRIPT_PATH="$(readlink "$SCRIPT_PATH")"
+    [[ $SCRIPT_PATH != /* ]] && SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_PATH"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_PATH")" && pwd)"
 
 # Color codes for output
 RED='\033[0;31m'
@@ -28,9 +34,11 @@ NC='\033[0m' # No Color
 
 # Project directory to validate (default to parent directory)
 PROJECT_DIR="${1:-$(cd "$SCRIPT_DIR/.." && pwd)}"
-# If an argument is provided, look directly in that directory
-# Otherwise, look in the cicd subdirectory
-if [ -n "$1" ]; then
+
+# Determine CICD directory
+# If the provided/default directory ends with 'cicd', use it directly
+# Otherwise, append '/cicd' to look in the project's cicd subdirectory
+if [[ "$PROJECT_DIR" == */cicd ]]; then
     CICD_DIR="$PROJECT_DIR"
 else
     CICD_DIR="$PROJECT_DIR/cicd"
@@ -146,9 +154,9 @@ get_golang_contract() {
     case "$1" in
         Build) echo "ctx:context.Context,source:*dagger.Directory,releaseCandidate:bool" ;;
         UnitTest) echo "ctx:context.Context,source:*dagger.Directory,buildArtifact:*dagger.File" ;;
-        IntegrationTest) echo "ctx:context.Context,source:*dagger.Directory,targetHost:string,targetPort:string" ;;
+        IntegrationTest) echo "ctx:context.Context,source:*dagger.Directory,targetUrl:string" ;;
         Deliver) echo "ctx:context.Context,source:*dagger.Directory,containerRepository:string,helmRepository:string,buildArtifact:*dagger.File,releaseCandidate:bool" ;;
-        Deploy) echo "ctx:context.Context,source:*dagger.Directory,kubeconfig:*dagger.Secret,helmRepository:string,releaseName:string,namespace:string,releaseCandidate:bool" ;;
+        Deploy) echo "ctx:context.Context,source:*dagger.Directory,awsconfig:*dagger.Secret,kubeconfig:*dagger.Secret,helmRepository:string,containerRepository:string,releaseCandidate:bool" ;;
         Validate) echo "ctx:context.Context,source:*dagger.Directory,kubeconfig:*dagger.Secret,releaseName:string,namespace:string,expectedVersion:string,releaseCandidate:bool" ;;
     esac
 }
@@ -157,9 +165,9 @@ get_python_contract() {
     case "$1" in
         build) echo "source:dagger.Directory,release_candidate:bool" ;;
         unit_test) echo "source:dagger.Directory,build_artifact:dagger.File" ;;
-        integration_test) echo "source:dagger.Directory,target_host:str,target_port:str" ;;
+        integration_test) echo "source:dagger.Directory,target_url:str" ;;
         deliver) echo "source:dagger.Directory,container_repository:str,helm_repository:str,build_artifact:dagger.File,release_candidate:bool" ;;
-        deploy) echo "source:dagger.Directory,kubeconfig:dagger.Secret,helm_repository:str,release_name:str,namespace:str,release_candidate:bool" ;;
+        deploy) echo "source:dagger.Directory,awsconfig:dagger.Secret,kubeconfig:dagger.Secret,helm_repository:str,container_repository:str,release_candidate:bool" ;;
         validate) echo "source:dagger.Directory,kubeconfig:dagger.Secret,release_name:str,namespace:str,expected_version:str,release_candidate:bool" ;;
     esac
 }
@@ -168,9 +176,9 @@ get_java_contract() {
     case "$1" in
         build) echo "source:Directory,releaseCandidate:boolean" ;;
         unitTest) echo "source:Directory,buildArtifact:File" ;;
-        integrationTest) echo "source:Directory,targetHost:String,targetPort:String" ;;
+        integrationTest) echo "source:Directory,targetUrl:String" ;;
         deliver) echo "source:Directory,containerRepository:String,helmRepository:String,buildArtifact:File,releaseCandidate:boolean" ;;
-        deploy) echo "source:Directory,kubeconfig:Secret,helmRepository:String,releaseName:String,namespace:String,releaseCandidate:boolean" ;;
+        deploy) echo "source:Directory,awsconfig:Secret,kubeconfig:Secret,helmRepository:String,containerRepository:String,releaseCandidate:boolean" ;;
         validate) echo "source:Directory,kubeconfig:Secret,releaseName:String,namespace:String,expectedVersion:String,releaseCandidate:boolean" ;;
     esac
 }
@@ -179,9 +187,9 @@ get_typescript_contract() {
     case "$1" in
         build) echo "source:Directory,releaseCandidate:boolean" ;;
         unitTest) echo "source:Directory,buildArtifact:File" ;;
-        integrationTest) echo "source:Directory,targetHost:string,targetPort:string" ;;
+        integrationTest) echo "source:Directory,targetUrl:string" ;;
         deliver) echo "source:Directory,containerRepository:string,helmRepository:string,buildArtifact:File,releaseCandidate:boolean" ;;
-        deploy) echo "source:Directory,kubeconfig:Secret,helmRepository:string,releaseName:string,namespace:string,releaseCandidate:boolean" ;;
+        deploy) echo "source:Directory,awsconfig:Secret,kubeconfig:Secret,helmRepository:string,containerRepository:string,releaseCandidate:boolean" ;;
         validate) echo "source:Directory,kubeconfig:Secret,releaseName:string,namespace:string,expectedVersion:string,releaseCandidate:boolean" ;;
     esac
 }
@@ -457,7 +465,8 @@ validate_project() {
             print_warning "No contract definition found for function '$func_name' in language '$LANGUAGE'"
             continue
         fi
-        $VALIDATE_FUNC "$func_name" "$expected_params" "$FILE_CONTENT"
+        # Call validation function and continue even on failure
+        $VALIDATE_FUNC "$func_name" "$expected_params" "$FILE_CONTENT" || true
     done
     
     # Print summary
