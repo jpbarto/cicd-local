@@ -28,7 +28,13 @@ NC='\033[0m' # No Color
 
 # Project directory to validate (default to parent directory)
 PROJECT_DIR="${1:-$(cd "$SCRIPT_DIR/.." && pwd)}"
-CICD_DIR="$PROJECT_DIR/cicd"
+# If an argument is provided, look directly in that directory
+# Otherwise, look in the cicd subdirectory
+if [ -n "$1" ]; then
+    CICD_DIR="$PROJECT_DIR"
+else
+    CICD_DIR="$PROJECT_DIR/cicd"
+fi
 
 # Counters for validation results
 TOTAL_CHECKS=0
@@ -96,14 +102,31 @@ else
     USE_JSON_CONTRACT=false
 fi
 
+# Normalize function name to PascalCase for JSON contract lookups
+normalize_function_name() {
+    local func_name="$1"
+    
+    case "$func_name" in
+        build) echo "Build" ;;
+        unit_test|unitTest) echo "UnitTest" ;;
+        integration_test|integrationTest) echo "IntegrationTest" ;;
+        deliver) echo "Deliver" ;;
+        deploy) echo "Deploy" ;;
+        validate) echo "Validate" ;;
+        *) echo "$func_name" ;;  # Return as-is if not recognized
+    esac
+}
+
 # Get contract parameters from JSON or fallback to hardcoded values
 get_contract_params() {
     local lang="$1"
     local func_name="$2"
     
     if [ "$USE_JSON_CONTRACT" = true ]; then
+        # Normalize function name to PascalCase for JSON lookup
+        local normalized_name=$(normalize_function_name "$func_name")
         # Use jq to extract parameters from JSON
-        local params=$(jq -r ".functions.${func_name}.parameters.${lang} // [] | map(\"\(.name):\(.type)\") | join(\",\")" "$CONTRACT_FILE")
+        local params=$(jq -r ".functions.${normalized_name}.parameters.${lang} // [] | map(\"\(.name):\(.type)\") | join(\",\")" "$CONTRACT_FILE")
         echo "$params"
     else
         # Fallback to hardcoded contracts
@@ -179,6 +202,7 @@ get_function_names() {
 detect_language() {
     local cicd_dir="$1"
     
+    # Check for standard Dagger project files first
     if [ -f "$cicd_dir/main.go" ] || [ -f "$cicd_dir/dagger.gen.go" ]; then
         echo "golang"
     elif [ -f "$cicd_dir/pyproject.toml" ] || [ -f "$cicd_dir/src/__init__.py" ]; then
@@ -186,6 +210,15 @@ detect_language() {
     elif [ -f "$cicd_dir/pom.xml" ] || [ -f "$cicd_dir/build.gradle" ]; then
         echo "java"
     elif [ -f "$cicd_dir/package.json" ] || [ -f "$cicd_dir/tsconfig.json" ]; then
+        echo "typescript"
+    # Check for example files (*.example.*)
+    elif ls "$cicd_dir"/*.example.go >/dev/null 2>&1; then
+        echo "golang"
+    elif ls "$cicd_dir"/*.example.py >/dev/null 2>&1; then
+        echo "python"
+    elif ls "$cicd_dir"/*.example.java >/dev/null 2>&1; then
+        echo "java"
+    elif ls "$cicd_dir"/*.example.ts >/dev/null 2>&1; then
         echo "typescript"
     else
         echo "unknown"

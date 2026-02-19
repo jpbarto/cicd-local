@@ -123,7 +123,7 @@
           { "name": "awsconfig", "type": "dagger.Secret", "required": false },
           { "name": "kubeconfig", "type": "dagger.Secret", "required": false },
           { "name": "helm_repository", "type": "str", "required": false },
-          { "name": "containerRepository", "type": "string", "required": false },
+          { "name": "container_repository", "type": "str", "required": false },
           { "name": "release_candidate", "type": "bool", "required": false }
         ],
         "java": [
