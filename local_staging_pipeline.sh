@@ -142,6 +142,11 @@ deploy_and_validate() {
     DEPLOY_CMD="${DEPLOY_CMD} --helm-repository=${HELM_REPOSITORY_URL}"
     DEPLOY_CMD="${DEPLOY_CMD} --container-repository=${CONTAINER_REPOSITORY_URL}"
     
+    # Pass delivery context if available
+    if [ -f "./output/deliver/deliveryContext" ]; then
+        DEPLOY_CMD="${DEPLOY_CMD} --delivery-context=file:./output/deliver/deliveryContext"
+    fi
+    
     if [ "$is_release_candidate" = "true" ]; then
         DEPLOY_CMD="${DEPLOY_CMD} --release-candidate=true"
     fi
@@ -174,10 +179,11 @@ deploy_and_validate() {
     print_info "Running validation tests..."
     echo ""
     
+    # Create validation output directory
+    mkdir -p ./output/validate
+    
     VALIDATE_CMD="dagger -m cicd call validate --source=${SOURCE_DIR}"
     VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file:${HOME}/.kube/config"
-    VALIDATE_CMD="${VALIDATE_CMD} --release-name=${RELEASE_NAME}"
-    VALIDATE_CMD="${VALIDATE_CMD} --namespace=${NAMESPACE}"
     
     # Pass deployment context if available
     if [ -f "./output/deploy/context.json" ]; then
@@ -188,11 +194,15 @@ deploy_and_validate() {
         VALIDATE_CMD="${VALIDATE_CMD} --release-candidate=true"
     fi
     
+    # Export validation context to file
+    VALIDATE_CMD="${VALIDATE_CMD} export --path=./output/validate/validationContext"
+    
     print_info "Running: ${VALIDATE_CMD}"
     echo ""
     
     if eval "$VALIDATE_CMD"; then
         print_success "Validation passed for $version_label"
+        print_info "Validation context saved to: ./output/validate/validationContext"
     else
         print_error "Validation failed for $version_label"
         return 1

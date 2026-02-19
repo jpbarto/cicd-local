@@ -54,29 +54,37 @@
         "golang": [
           { "name": "ctx", "type": "context.Context", "required": true },
           { "name": "source", "type": "*dagger.Directory", "required": true },
-          { "name": "targetUrl", "type": "string", "required": false },
-          { "name": "deploymentContext", "type": "*dagger.File", "required": false }
+          { "name": "kubeconfig", "type": "*dagger.Secret", "required": true },
+          { "name": "awsconfig", "type": "*dagger.Secret", "required": false },
+          { "name": "deploymentContext", "type": "*dagger.File", "required": false },
+          { "name": "validationContext", "type": "*dagger.File", "required": false }
         ],
         "python": [
           { "name": "source", "type": "dagger.Directory", "required": true },
-          { "name": "target_url", "type": "str", "required": false },
-          { "name": "deployment_context", "type": "dagger.File", "required": false }
+          { "name": "kubeconfig", "type": "*dagger.Secret", "required": true },
+          { "name": "awsconfig", "type": "*dagger.Secret", "required": false },
+          { "name": "deployment_context", "type": "dagger.File", "required": false },
+          { "name": "validation_context", "type": "dagger.File", "required": false }
         ],
         "java": [
           { "name": "source", "type": "Directory", "required": true },
-          { "name": "targetUrl", "type": "String", "required": false },
-          { "name": "deploymentContext", "type": "File", "required": false }
+          { "name": "kubeconfig", "type": "*dagger.Secret", "required": true },
+          { "name": "awsconfig", "type": "*dagger.Secret", "required": false },
+          { "name": "deploymentContext", "type": "File", "required": false },
+          { "name": "validationContext", "type": "File", "required": false }
         ],
         "typescript": [
           { "name": "source", "type": "Directory", "required": true },
-          { "name": "targetUrl", "type": "string", "required": false },
-          { "name": "deploymentContext", "type": "File", "required": false }
+          { "name": "kubeconfig", "type": "*dagger.Secret", "required": true },
+          { "name": "awsconfig", "type": "*dagger.Secret", "required": false },
+          { "name": "deploymentContext", "type": "File", "required": false },
+          { "name": "validationContext", "type": "File", "required": false }
         ]
       }
     },
     "Deliver": {
       "description": "Publishes generated artifacts to artifact repositories",
-      "returns": "string",
+      "returns": "File",
       "parameters": {
         "golang": [
           { "name": "ctx", "type": "context.Context", "required": true },
@@ -120,7 +128,8 @@
           { "name": "kubeconfig", "type": "*dagger.Secret", "required": false },
           { "name": "helmRepository", "type": "string", "required": false },
           { "name": "containerRepository", "type": "string", "required": false },
-          { "name": "releaseCandidate", "type": "bool", "required": false }
+          { "name": "releaseCandidate", "type": "bool", "required": false },
+          { "name": "deliveryContext", "type": "*dagger.File", "required": false }
         ],
         "python": [
           { "name": "source", "type": "dagger.Directory", "required": true },
@@ -128,7 +137,8 @@
           { "name": "kubeconfig", "type": "dagger.Secret", "required": false },
           { "name": "helm_repository", "type": "str", "required": false },
           { "name": "container_repository", "type": "str", "required": false },
-          { "name": "release_candidate", "type": "bool", "required": false }
+          { "name": "release_candidate", "type": "bool", "required": false },
+          { "name": "delivery_context", "type": "dagger.File", "required": false }
         ],
         "java": [
           { "name": "source", "type": "Directory", "required": true },
@@ -136,7 +146,8 @@
           { "name": "kubeconfig", "type": "Secret", "required": false },
           { "name": "helmRepository", "type": "String", "required": false },
           { "name": "containerRepository", "type": "string", "required": false },
-          { "name": "releaseCandidate", "type": "boolean", "required": false }
+          { "name": "releaseCandidate", "type": "boolean", "required": false },
+          { "name": "deliveryContext", "type": "File", "required": false }
         ],
         "typescript": [
           { "name": "source", "type": "Directory", "required": true },
@@ -144,48 +155,41 @@
           { "name": "kubeconfig", "type": "Secret", "required": false },
           { "name": "helmRepository", "type": "string", "required": false },
           { "name": "containerRepository", "type": "string", "required": false },
-          { "name": "releaseCandidate", "type": "boolean", "required": false }
+          { "name": "releaseCandidate", "type": "boolean", "required": false },
+          { "name": "deliveryContext", "type": "File", "required": false }
         ]
       }
     },
     "Validate": {
       "description": "Validates that a deployment is healthy and functioning correctly",
-      "returns": "string",
+      "returns": "File",
       "parameters": {
         "golang": [
           { "name": "ctx", "type": "context.Context", "required": true },
           { "name": "source", "type": "*dagger.Directory", "required": true },
           { "name": "kubeconfig", "type": "*dagger.Secret", "required": true },
-          { "name": "releaseName", "type": "string", "required": false },
-          { "name": "namespace", "type": "string", "required": false },
-          { "name": "expectedVersion", "type": "string", "required": false },
+          { "name": "awsconfig", "type": "*dagger.Secret", "required": false },
           { "name": "releaseCandidate", "type": "bool", "required": false },
           { "name": "deploymentContext", "type": "*dagger.File", "required": false }
         ],
         "python": [
           { "name": "source", "type": "dagger.Directory", "required": true },
           { "name": "kubeconfig", "type": "dagger.Secret", "required": true },
-          { "name": "release_name", "type": "str", "required": false },
-          { "name": "namespace", "type": "str", "required": false },
-          { "name": "expected_version", "type": "str", "required": false },
+          { "name": "awsconfig", "type": "dagger.Secret", "required": false },
           { "name": "release_candidate", "type": "bool", "required": false },
           { "name": "deployment_context", "type": "dagger.File", "required": false }
         ],
         "java": [
           { "name": "source", "type": "Directory", "required": true },
           { "name": "kubeconfig", "type": "Secret", "required": true },
-          { "name": "releaseName", "type": "String", "required": false },
-          { "name": "namespace", "type": "String", "required": false },
-          { "name": "expectedVersion", "type": "String", "required": false },
+          { "name": "awsconfig", "type": "Secret", "required": false },
           { "name": "releaseCandidate", "type": "boolean", "required": false },
           { "name": "deploymentContext", "type": "File", "required": false }
         ],
         "typescript": [
           { "name": "source", "type": "Directory", "required": true },
           { "name": "kubeconfig", "type": "Secret", "required": true },
-          { "name": "releaseName", "type": "string", "required": false },
-          { "name": "namespace", "type": "string", "required": false },
-          { "name": "expectedVersion", "type": "string", "required": false },
+          { "name": "awsconfig", "type": "Secret", "required": false },
           { "name": "releaseCandidate", "type": "boolean", "required": false },
           { "name": "deploymentContext", "type": "File", "required": false }
         ]

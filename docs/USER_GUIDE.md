@@ -206,7 +206,7 @@ cicd-local deploy --colima-profile=my-cluster
 - Contains endpoint URL, namespace, release name, version
 - Passed to Validate function automatically
 
-See [DEPLOYMENT_CONTEXT.md](DEPLOYMENT_CONTEXT.md) for advanced usage.
+See [CONTEXT_FILES.md](CONTEXT_FILES.md) for advanced usage.
 
 ### iat - Integration Testing
 
@@ -459,7 +459,7 @@ cicd-local staging
 
 - **[CONTRACT_VALIDATION.md](CONTRACT_VALIDATION.md)** - Learn about contract validation
 - **[CONTRACT_REFERENCE.md](CONTRACT_REFERENCE.md)** - Complete contract specification
-- **[DEPLOYMENT_CONTEXT.md](DEPLOYMENT_CONTEXT.md)** - Advanced deployment patterns
+- **[CONTEXT_FILES.md](CONTEXT_FILES.md)** - Context files for inter-function communication
 - **Example implementations** in `cicd_dagger_contract/` directory
 
 ## Getting Help
@@ -484,7 +484,7 @@ cicd-local/
 │   ├── USER_GUIDE.md            # This file
 │   ├── CONTRACT_VALIDATION.md   # Validation guide
 │   ├── CONTRACT_REFERENCE.md    # Contract specification
-│   └── DEPLOYMENT_CONTEXT.md    # Advanced patterns
+│   └── CONTEXT_FILES.md         # Context files guide
 └── cicd_dagger_contract/         # Example implementations
     ├── golang/
     ├── python/

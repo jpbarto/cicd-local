@@ -229,24 +229,29 @@ func (m *Goserv) UnitTest(
 func (m *Goserv) IntegrationTest(
     ctx context.Context,
     source *dagger.Directory,
-    targetUrl string,
+    kubeconfig *dagger.Secret,
+    awsconfig *dagger.Secret,
     deploymentContext *dagger.File,
+    validationContext *dagger.File,
 ) (string, error)
 ```
 
 **Parameters**:
 - `ctx context.Context` - Go context for cancellation and timeout control
 - `source *dagger.Directory` - Source directory containing integration test scripts
-- `targetUrl string` - (Optional) Full URL where the application is deployed (e.g., `http://localhost:8080`)
+- `kubeconfig *dagger.Secret` - (Required) Kubernetes configuration for accessing deployed services
+- `awsconfig *dagger.Secret` - (Optional) AWS configuration for cloud-based testing
 - `deploymentContext *dagger.File` - (Optional) Deployment context file from Deploy function containing endpoint information
+- `validationContext *dagger.File` - (Optional) Validation context file from Validate function with validation results
 
 **Return Values**:
 - `string` - Test output (stdout) from test execution
 - `error` - Error if tests fail or cannot be executed
 
 **Usage Notes**:
-- Tests run against an already-deployed instance (not a service started by this function)
+- Tests run against an already-deployed instance
 - Should execute integration test scripts (e.g., `tests/integration_test.sh`)
+- Can extract endpoint URLs and credentials from deployment and validation contexts
 - May include performance tests, acceptance tests, and end-to-end tests
 - Commonly used with load testing tools (e.g., k6)
 
@@ -265,7 +270,7 @@ func (m *Goserv) Deliver(
     helmRepository string,
     buildArtifact *dagger.File,
     releaseCandidate bool,
-) (string, error)
+) (*dagger.File, error)
 ```
 
 **Parameters**:
@@ -277,7 +282,8 @@ func (m *Goserv) Deliver(
 - `releaseCandidate bool` - (Optional) Whether this is a release candidate (affects version tagging)
 
 **Return Values**:
-- `string` - Delivery summary including published container image reference and Helm chart reference
+- `*dagger.File` - Delivery context file containing JSON metadata about published artifacts (image references, chart locations, versions)
+- `error` - Error if publishing fails
 - `error` - Error if publishing fails
 
 **Usage Notes**:
@@ -303,6 +309,7 @@ func (m *Goserv) Deploy(
     helmRepository string,
     containerRepository string,
     releaseCandidate bool,
+    deliveryContext *dagger.File,
 ) (*dagger.File, error)
 ```
 
@@ -317,6 +324,7 @@ func (m *Goserv) Deploy(
 - `helmRepository string` - (Optional, default: `oci://ttl.sh`) Helm chart repository URL
 - `containerRepository string` - (Optional, default: `ttl.sh`) Container repository URL for pulling images
 - `releaseCandidate bool` - (Optional) Whether to deploy release candidate version
+- `deliveryContext *dagger.File` - (Optional) Delivery context from Deliver function with artifact details
 
 **Return Values**:
 - `*dagger.File` - Deployment context file containing deployment metadata (JSON format with endpoint, namespace, release name, version)
@@ -342,35 +350,32 @@ func (m *Goserv) Validate(
     ctx context.Context,
     source *dagger.Directory,
     kubeconfig *dagger.Secret,
-    releaseName string,
-    namespace string,
-    expectedVersion string,
+    awsconfig *dagger.Secret,
     releaseCandidate bool,
     deploymentContext *dagger.File,
-) (string, error)
+) (*dagger.File, error)
 ```
 
 **Parameters**:
 - `ctx context.Context` - Go context for cancellation and timeout control
 - `source *dagger.Directory` - Source directory containing validation scripts
-- `kubeconfig *dagger.Secret` - Kubernetes configuration file content
-- `releaseName string` - (Optional, default: `goserv`) Helm release name to validate
-- `namespace string` - (Optional, default: `goserv`) Kubernetes namespace to validate
-- `expectedVersion string` - (Optional) Expected version to validate. If not provided, read from `VERSION` file
+- `kubeconfig *dagger.Secret` - (Required) Kubernetes configuration file content
+- `awsconfig *dagger.Secret` - (Optional) AWS configuration for cloud-based validation
 - `releaseCandidate bool` - (Optional) Whether validating a release candidate
 - `deploymentContext *dagger.File` - (Optional) Deployment context file from Deploy function
 
 **Return Values**:
-- `string` - Validation output (test results, health check output)
+- `*dagger.File` - Validation context file containing validation results and metadata (JSON format)
 - `error` - Error if validation fails
 
 **Usage Notes**:
 - Should verify deployment exists and is healthy (pods running, replicas ready)
-- Should verify correct version is deployed
+- Should verify correct version is deployed (extracted from deploymentContext)
 - Should check Kubernetes resources (Deployment, Service, Endpoints)
 - Should verify application endpoints are responding correctly
 - May execute validation scripts (e.g., `tests/validate.sh`)
 - Should check both Helm release status and actual pod/application health
+- Returns validation context for use by IntegrationTest function
 
 ---
 

@@ -225,6 +225,9 @@ fi
 if [ "$PIPELINE_TRIGGER" = "pr-merge" ]; then
     print_step "Step 3: Deliver Artifacts"
     
+    # Create delivery output directory
+    mkdir -p ./output/deliver
+    
     DELIVER_CMD="dagger -m cicd call deliver --source=$SOURCE_DIR"
     DELIVER_CMD="$DELIVER_CMD --container-repository=$CONTAINER_REPOSITORY_URL"
     DELIVER_CMD="$DELIVER_CMD --helm-repository=$HELM_REPOSITORY_URL"
@@ -234,11 +237,15 @@ if [ "$PIPELINE_TRIGGER" = "pr-merge" ]; then
         DELIVER_CMD="$DELIVER_CMD --release-candidate=true"
     fi
     
+    # Export delivery context to file
+    DELIVER_CMD="$DELIVER_CMD export --path=./output/deliver/deliveryContext"
+    
     print_info "Running: $DELIVER_CMD"
     echo ""
     
     if eval "$DELIVER_CMD"; then
         print_success "Artifacts delivered successfully"
+        print_info "Delivery context saved to: ./output/deliver/deliveryContext"
     else
         print_error "Delivery failed"
         exit 1

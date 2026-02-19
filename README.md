@@ -196,9 +196,9 @@ NAMESPACE="goserv"
 ## Documentation
 
 - **[USER_GUIDE.md](docs/USER_GUIDE.md)** - Complete usage guide with all commands, options, and workflows
-- **[CONTRACT_VALIDATION.md](docs/CONTRACT_VALIDATION.md)** - Detailed validation guide with examples
+- **[CONTRACT_VALIDATION.md](docs/CONTRACT_VALIDATION.md)** - Detailed validation guide with examples for all languages
 - **[CONTRACT_REFERENCE.md](docs/CONTRACT_REFERENCE.md)** - Complete contract specification and function signatures
-- **[DEPLOYMENT_CONTEXT.md](docs/DEPLOYMENT_CONTEXT.md)** - Advanced deployment context pattern
+- **[CONTEXT_FILES.md](docs/CONTEXT_FILES.md)** - Context files guide (deliveryContext, deploymentContext, validationContext)
 
 ## Example Implementations
 

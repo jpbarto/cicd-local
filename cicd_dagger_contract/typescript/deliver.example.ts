@@ -14,7 +14,7 @@ export class Deliver {
    * @param helmRepository Helm chart repository URL (default: oci://ttl.sh)
    * @param buildArtifact Build output from the Build function (if not provided, will build from source)
    * @param releaseCandidate Build as release candidate (appends -rc to version tag)
-   * @returns Delivery output string
+   * @returns File containing delivery context
    */
   @func()
   async deliver(
@@ -23,14 +23,26 @@ export class Deliver {
     helmRepository: string = "oci://ttl.sh",
     buildArtifact?: File,
     releaseCandidate: boolean = false
-  ): Promise<string> {
-    // Print message
-    const output = await dag
-      .container()
-      .from("alpine:latest")
-      .withExec(["echo", "this is the Deliver function"])
-      .stdout()
+  ): Promise<File> {
+    // Perform delivery operations (container push, chart publish)
+    // ... delivery logic here ...
 
-    return output
+    // Create delivery context
+    const deliveryContext = {
+      timestamp: new Date().toISOString(),
+      imageReference: `${containerRepository}/goserv:1.0.0`,
+      chartReference: `${helmRepository}/goserv:0.1.0`,
+      containerRepository,
+      helmRepository,
+      releaseCandidate,
+    }
+
+    const contextJson = JSON.stringify(deliveryContext, null, 2)
+
+    // Return as file
+    return dag
+      .directory()
+      .withNewFile("delivery-context.json", contextJson)
+      .file("delivery-context.json")
   }
 }

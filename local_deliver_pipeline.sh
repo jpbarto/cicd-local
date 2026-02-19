@@ -203,13 +203,13 @@ else
     print_warning "Step 1: Skipping build (--skip-build flag set)"
     
     # Verify tarball exists
-    if [ ! -f "./build/goserv-image.tar" ]; then
-        print_error "Build artifact not found: ./build/goserv-image.tar"
+    if [ ! -f "./output/build/buildArtifact" ]; then
+        print_error "Build artifact not found: ./output/build/buildArtifact"
         echo ""
         echo "Please run without --skip-build to create the artifact first."
         exit 1
     fi
-    print_info "Using existing build artifact: ./build/goserv-image.tar"
+    print_info "Using existing build artifact: ./output/build/buildArtifact"
 fi
 
 ################################################################################
@@ -218,20 +218,27 @@ fi
 
 print_step "Step 2: Deliver Artifacts to Repositories"
 
+# Create delivery output directory
+mkdir -p ./output/deliver
+
 DELIVER_CMD="dagger -m cicd call deliver --source=$SOURCE_DIR"
 DELIVER_CMD="$DELIVER_CMD --container-repository=$CONTAINER_REPOSITORY_URL"
 DELIVER_CMD="$DELIVER_CMD --helm-repository=$HELM_REPOSITORY_URL"
-DELIVER_CMD="$DELIVER_CMD --image-tarball=./build/goserv-image.tar"
+DELIVER_CMD="$DELIVER_CMD --build-artifact=./output/build/buildArtifact"
 
 if [ "$RELEASE_CANDIDATE" = true ]; then
     DELIVER_CMD="$DELIVER_CMD --release-candidate=true"
 fi
+
+# Export delivery context to file
+DELIVER_CMD="$DELIVER_CMD export --path=./output/deliver/deliveryContext"
 
 print_info "Running: $DELIVER_CMD"
 echo ""
 
 if eval "$DELIVER_CMD"; then
     print_success "Artifacts delivered successfully"
+    print_info "Delivery context saved to: ./output/deliver/deliveryContext"
 else
     print_error "Delivery failed"
     exit 1

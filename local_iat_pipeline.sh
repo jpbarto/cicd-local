@@ -233,6 +233,11 @@ if [ "$SKIP_DEPLOY" = false ]; then
     DEPLOY_CMD="${DEPLOY_CMD} --helm-repository=${HELM_REPOSITORY_URL}"
     DEPLOY_CMD="${DEPLOY_CMD} --container-repository=${CONTAINER_REPOSITORY_URL}"
     
+    # Pass delivery context if available
+    if [ -f "./output/deliver/deliveryContext" ]; then
+        DEPLOY_CMD="${DEPLOY_CMD} --delivery-context=file:./output/deliver/deliveryContext"
+    fi
+    
     if [ "$RELEASE_CANDIDATE" = true ]; then
         DEPLOY_CMD="${DEPLOY_CMD} --release-candidate=true"
     fi
@@ -260,6 +265,9 @@ fi
 
 print_step "Step 4: Validate Deployment"
 
+# Create validation output directory
+mkdir -p ./output/validate
+
 # Build Dagger Validate command
 VALIDATE_CMD="dagger -m cicd call validate --source=${SOURCE_DIR}"
 VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file:${HOME}/.kube/config"
@@ -273,11 +281,15 @@ if [ "$RELEASE_CANDIDATE" = true ]; then
     VALIDATE_CMD="${VALIDATE_CMD} --release-candidate=true"
 fi
 
+# Export validation context to file
+VALIDATE_CMD="${VALIDATE_CMD} export --path=./output/validate/validationContext"
+
 print_info "Running: ${VALIDATE_CMD}"
 echo ""
 
 if eval "$VALIDATE_CMD"; then
     print_success "Deployment validation passed"
+    print_info "Validation context saved to: ./output/validate/validationContext"
 else
     print_error "Deployment validation failed"
     exit 1
@@ -289,22 +301,18 @@ fi
 
 print_step "Step 6: Run Integration Tests"
 
-# Determine target URL - use from deployment context if available, otherwise construct
-if [ -f "./output/deploy/context.json" ] && command -v jq &> /dev/null; then
-    TARGET_URL=$(jq -r '.endpoint // "http://host.docker.internal:${LOCAL_PORT}"' ./output/deploy/context.json)
-    print_info "Using target URL from deployment context: ${TARGET_URL}"
-else
-    TARGET_URL="http://host.docker.internal:${LOCAL_PORT}"
-    print_info "Using default target URL: ${TARGET_URL}"
-fi
-
 # Build Dagger IntegrationTest command
 TEST_CMD="dagger -m cicd call integration-test --source=${SOURCE_DIR}"
-TEST_CMD="${TEST_CMD} --target-url=${TARGET_URL}"
+TEST_CMD="${TEST_CMD} --kubeconfig=file:${HOME}/.kube/config"
 
 # Pass deployment context if available
 if [ -f "./output/deploy/context.json" ]; then
     TEST_CMD="${TEST_CMD} --deployment-context=file:./output/deploy/context.json"
+fi
+
+# Pass validation context if available
+if [ -f "./output/validate/validationContext" ]; then
+    TEST_CMD="${TEST_CMD} --validation-context=file:./output/validate/validationContext"
 fi
 
 print_info "Running: ${TEST_CMD}"

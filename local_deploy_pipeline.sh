@@ -390,6 +390,11 @@ DEPLOY_CMD="${DEPLOY_CMD} --kubeconfig=file:${TEMP_KUBECONFIG}"
 DEPLOY_CMD="${DEPLOY_CMD} --helm-repository=${HELM_REPOSITORY_URL}"
 DEPLOY_CMD="${DEPLOY_CMD} --container-repository=${CONTAINER_REPOSITORY_URL}"
 
+# Pass delivery context if available
+if [ -f "./output/deliver/deliveryContext" ]; then
+    DEPLOY_CMD="${DEPLOY_CMD} --delivery-context=file:./output/deliver/deliveryContext"
+fi
+
 if [ "$RELEASE_CANDIDATE" = true ]; then
     DEPLOY_CMD="${DEPLOY_CMD} --release-candidate=true"
 fi
@@ -415,11 +420,17 @@ fi
 if [ "$SKIP_VALIDATION" = false ]; then
     print_step "Step 4: Validate Deployment"
     
+    # Create validation output directory
+    mkdir -p ./output/validate
+    
     # Build Dagger Validate command
     VALIDATE_CMD="dagger -m cicd call validate --source=${SOURCE_DIR}"
     VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file:${TEMP_KUBECONFIG}"
-    VALIDATE_CMD="${VALIDATE_CMD} --release-name=${RELEASE_NAME}"
-    VALIDATE_CMD="${VALIDATE_CMD} --namespace=${NAMESPACE}"
+    
+    # Add AWS config if available
+    if [ "$USE_AWS_CONFIG" = true ]; then
+        VALIDATE_CMD="${VALIDATE_CMD} --awsconfig=file:${TEMP_AWS_CONFIG}"
+    fi
     
     # Pass deployment context if available
     if [ -f "./output/deploy/context.json" ]; then
@@ -430,11 +441,15 @@ if [ "$SKIP_VALIDATION" = false ]; then
         VALIDATE_CMD="${VALIDATE_CMD} --release-candidate=true"
     fi
     
+    # Export validation context to file
+    VALIDATE_CMD="${VALIDATE_CMD} export --path=./output/validate/validationContext"
+    
     print_info "Running: ${VALIDATE_CMD}"
     echo ""
     
     if eval "$VALIDATE_CMD"; then
         print_success "Deployment validation passed"
+        print_info "Validation context saved to: ./output/validate/validationContext"
     else
         print_error "Deployment validation failed"
         exit 1

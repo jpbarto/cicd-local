@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"time"
 
 	"dagger/goserv/internal/dagger"
 )
@@ -23,16 +25,27 @@ func (m *Goserv) Deliver(
 	// +optional
 	// Build as release candidate (appends -rc to version tag)
 	releaseCandidate bool,
-) (string, error) {
-	// Print message
-	output, err := dag.Container().
-		From("alpine:latest").
-		WithExec([]string{"echo", "this is the Deliver function"}).
-		Stdout(ctx)
+) (*dagger.File, error) {
+	// Perform delivery operations (container push, chart publish)
+	// ... delivery logic here ...
 
-	if err != nil {
-		return "", err
+	// Create delivery context
+	deliveryContext := map[string]interface{}{
+		"timestamp":          time.Now().Format(time.RFC3339),
+		"imageReference":     containerRepository + "/goserv:1.0.0",
+		"chartReference":     helmRepository + "/goserv:0.1.0",
+		"containerRepository": containerRepository,
+		"helmRepository":     helmRepository,
+		"releaseCandidate":   releaseCandidate,
 	}
 
-	return output, nil
+	contextJSON, err := json.MarshalIndent(deliveryContext, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	// Return as file
+	return dag.Directory().
+		WithNewFile("delivery-context.json", string(contextJSON)).
+		File("delivery-context.json"), nil
 }

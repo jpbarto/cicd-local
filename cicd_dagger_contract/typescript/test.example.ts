@@ -2,7 +2,7 @@
  * Test module for Goserv
  */
 
-import { dag, Container, Directory, File, object, func } from "@dagger.io/dagger"
+import { dag, Container, Directory, File, Secret, object, func } from "@dagger.io/dagger"
 
 @object()
 export class Test {
@@ -32,19 +32,42 @@ export class Test {
    * IntegrationTest runs integration tests against a deployed goserv instance
    *
    * @param source Source directory containing the project
-   * @param targetUrl Target URL where goserv is deployed (default: http://localhost:8080)
+   * @param kubeconfig Kubernetes config file content
+   * @param awsconfig AWS configuration file content
+   * @param deploymentContext Deployment context from Deploy function
+   * @param validationContext Validation context from Validate function
    * @returns Test output string
    */
   @func()
   async integrationTest(
     source: Directory,
-    targetUrl: string = "http://localhost:8080"
+    kubeconfig: File,
+    awsconfig?: Secret,
+    deploymentContext?: File,
+    validationContext?: File
   ): Promise<string> {
-    // Print message
+    // Extract endpoint from deployment context if provided
+    let targetUrl: string | undefined
+    if (deploymentContext) {
+      const contextContent = await deploymentContext.contents()
+      const context = JSON.parse(contextContent)
+      targetUrl = context.endpoint
+    }
+
+    // Check validation status if provided
+    if (validationContext) {
+      const valContent = await validationContext.contents()
+      const valContext = JSON.parse(valContent)
+      if (valContext.status !== "healthy") {
+        return "Skipping tests: deployment validation failed"
+      }
+    }
+
+    // Run integration tests against targetUrl
     const output = await dag
       .container()
       .from("alpine:latest")
-      .withExec(["echo", "this is the IntegrationTest function"])
+      .withExec(["echo", `Running integration tests against ${targetUrl}`])
       .stdout()
 
     return output

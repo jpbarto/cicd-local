@@ -1,5 +1,7 @@
 """Deliver module for Goserv"""
 
+import json
+from datetime import datetime
 import dagger
 from dagger import dag, function, object_type
 from typing import Optional
@@ -15,7 +17,7 @@ class Deliver:
         helm_repository: Optional[str] = "oci://ttl.sh",
         build_artifact: Optional[dagger.File] = None,
         release_candidate: Optional[bool] = False,
-    ) -> str:
+    ) -> dagger.File:
         """Deliver publishes the goserv container and Helm chart to repositories
         
         Args:
@@ -26,14 +28,26 @@ class Deliver:
             release_candidate: Build as release candidate (appends -rc to version tag)
         
         Returns:
-            Delivery output string
+            File containing delivery context
         """
-        # Print message
-        output = await (
-            dag.container()
-            .from_("alpine:latest")
-            .with_exec(["echo", "this is the Deliver function"])
-            .stdout()
-        )
+        # Perform delivery operations (container push, chart publish)
+        # ... delivery logic here ...
 
-        return output
+        # Create delivery context
+        delivery_context = {
+            "timestamp": datetime.now().isoformat(),
+            "imageReference": f"{container_repository}/goserv:1.0.0",
+            "chartReference": f"{helm_repository}/goserv:0.1.0",
+            "containerRepository": container_repository,
+            "helmRepository": helm_repository,
+            "releaseCandidate": release_candidate,
+        }
+
+        context_json = json.dumps(delivery_context, indent=2)
+
+        # Return as file
+        return (
+            dag.directory()
+            .with_new_file("delivery-context.json", context_json)
+            .file("delivery-context.json")
+        )

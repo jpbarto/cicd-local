@@ -162,8 +162,10 @@ async unitTest(
 func (m *YourModule) IntegrationTest(
     ctx context.Context,
     source *dagger.Directory,
-    targetUrl string,
+    kubeconfig *dagger.Secret,
+    awsconfig *dagger.Secret,
     deploymentContext *dagger.File,
+    validationContext *dagger.File,
 ) (string, error)
 ```
 
@@ -173,8 +175,10 @@ func (m *YourModule) IntegrationTest(
 async def integration_test(
     self,
     source: dagger.Directory,
-    target_url: Optional[str] = None,
+    kubeconfig: dagger.Secret,
+    awsconfig: Optional[dagger.Secret] = None,
     deployment_context: Optional[dagger.File] = None,
+    validation_context: Optional[dagger.File] = None,
 ) -> str:
 ```
 
@@ -182,8 +186,10 @@ async def integration_test(
 ```java
 public String integrationTest(
     Directory source,
-    String targetUrl,
-    File deploymentContext
+    Secret kubeconfig,
+    Secret awsconfig,
+    File deploymentContext,
+    File validationContext
 ) throws Exception
 ```
 
@@ -192,8 +198,10 @@ public String integrationTest(
 @func()
 async integrationTest(
     source: Directory,
-    targetUrl?: string,
-    deploymentContext?: File
+    kubeconfig: Secret,
+    awsconfig?: Secret,
+    deploymentContext?: File,
+    validationContext?: File
 ): Promise<string>
 ```
 
@@ -210,7 +218,7 @@ func (m *YourModule) Deliver(
     helmRepository string,
     buildArtifact *dagger.File,
     releaseCandidate bool,
-) (string, error)
+) (*dagger.File, error)
 ```
 
 **Python:**
@@ -223,12 +231,12 @@ async def deliver(
     helm_repository: str = "oci://ttl.sh",
     build_artifact: Optional[dagger.File] = None,
     release_candidate: bool = False,
-) -> str:
+) -> dagger.File:
 ```
 
 **Java:**
 ```java
-public String deliver(
+public File deliver(
     Directory source,
     String containerRepository,
     String helmRepository,
@@ -246,8 +254,10 @@ async deliver(
     helmRepository: string = "oci://ttl.sh",
     buildArtifact?: File,
     releaseCandidate: boolean = false
-): Promise<string>
+): Promise<File>
 ```
+
+**Note**: Deliver returns a `File` containing delivery context (JSON metadata with published artifact details).
 
 ### 5. Deploy Function
 
@@ -263,6 +273,7 @@ func (m *YourModule) Deploy(
     helmRepository string,
     containerRepository string,
     releaseCandidate bool,
+    deliveryContext *dagger.File,
 ) (*dagger.File, error)
 ```
 
@@ -277,6 +288,7 @@ async def deploy(
     helm_repository: str = "oci://ttl.sh",
     container_repository: str = "ttl.sh",
     release_candidate: bool = False,
+    delivery_context: Optional[dagger.File] = None,
 ) -> dagger.File:
 ```
 
@@ -288,7 +300,8 @@ public File deploy(
     Secret kubeconfig,
     String helmRepository,
     String containerRepository,
-    boolean releaseCandidate
+    boolean releaseCandidate,
+    File deliveryContext
 ) throws Exception
 ```
 
@@ -301,7 +314,8 @@ async deploy(
     kubeconfig?: Secret,
     helmRepository: string = "oci://ttl.sh",
     containerRepository: string = "ttl.sh",
-    releaseCandidate: boolean = false
+    releaseCandidate: boolean = false,
+    deliveryContext?: File
 ): Promise<File>
 ```
 
@@ -317,12 +331,10 @@ func (m *YourModule) Validate(
     ctx context.Context,
     source *dagger.Directory,
     kubeconfig *dagger.Secret,
-    releaseName string,
-    namespace string,
-    expectedVersion string,
+    awsconfig *dagger.Secret,
     releaseCandidate bool,
     deploymentContext *dagger.File,
-) (string, error)
+) (*dagger.File, error)
 ```
 
 **Python:**
@@ -332,22 +344,18 @@ async def validate(
     self,
     source: dagger.Directory,
     kubeconfig: dagger.Secret,
-    release_name: Optional[str] = None,
-    namespace: Optional[str] = None,
-    expected_version: Optional[str] = None,
+    awsconfig: Optional[dagger.Secret] = None,
     release_candidate: bool = False,
     deployment_context: Optional[dagger.File] = None,
-) -> str:
+) -> dagger.File:
 ```
 
 **Java:**
 ```java
-public String validate(
+public File validate(
     Directory source,
     Secret kubeconfig,
-    String releaseName,
-    String namespace,
-    String expectedVersion,
+    Secret awsconfig,
     boolean releaseCandidate,
     File deploymentContext
 ) throws Exception
@@ -359,13 +367,13 @@ public String validate(
 async validate(
     source: Directory,
     kubeconfig: Secret,
-    releaseName?: string,
-    namespace?: string,
-    expectedVersion?: string,
+    awsconfig?: Secret,
     releaseCandidate: boolean = false,
     deploymentContext?: File
-): Promise<string>
+): Promise<File>
 ```
+
+**Note**: Validate returns a `File` containing validation context (JSON metadata with validation results).
 
 ## Validation Output
 
@@ -711,7 +719,7 @@ After successful validation:
 
 - **[USER_GUIDE.md](USER_GUIDE.md)** - Complete pipeline usage guide
 - **[CONTRACT_REFERENCE.md](CONTRACT_REFERENCE.md)** - Detailed contract specification
-- **[DEPLOYMENT_CONTEXT.md](DEPLOYMENT_CONTEXT.md)** - Advanced deployment patterns
+- **[CONTEXT_FILES.md](CONTEXT_FILES.md)** - Context files for inter-function communication
 - **Example implementations** in `cicd_dagger_contract/` directory
 
 ## Getting Help

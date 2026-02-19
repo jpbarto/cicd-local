@@ -1,5 +1,7 @@
 """Validate module for Goserv"""
 
+import json
+from datetime import datetime
 import dagger
 from dagger import dag, function, object_type
 from typing import Optional
@@ -10,32 +12,45 @@ class Validate:
     @function
     async def validate(
         self,
-        source: dagger.Directory,
-        kubeconfig: dagger.Secret,
-        release_name: Optional[str] = "goserv",
-        namespace: Optional[str] = "goserv",
-        expected_version: Optional[str] = "",
-        release_candidate: Optional[bool] = False,
-    ) -> str:
+        kubeconfig: dagger.File,
+        deployment_context: dagger.File,
+        awsconfig: Optional[dagger.Secret] = None,
+    ) -> dagger.File:
         """Validate runs the validation script to verify that the deployment is healthy and functioning correctly
         
         Args:
-            source: Source directory containing the project
             kubeconfig: Kubernetes config file content
-            release_name: Release name (default: goserv)
-            namespace: Kubernetes namespace (default: goserv)
-            expected_version: Expected version to validate (if not provided, reads from VERSION file)
-            release_candidate: Build as release candidate (appends -rc to version)
+            deployment_context: Deployment context from Deploy function
+            awsconfig: AWS configuration file content
         
         Returns:
-            Validation output string
+            File containing validation context
         """
-        # Print message
-        output = await (
-            dag.container()
-            .from_("alpine:latest")
-            .with_exec(["echo", "this is the Validate function"])
-            .stdout()
-        )
+        # Extract deployment information from context
+        context_content = await deployment_context.contents()
+        dep_context = json.loads(context_content)
+        
+        endpoint = dep_context.get("endpoint")
+        release_name = dep_context.get("releaseName")
 
-        return output
+        # Perform validation checks
+        # ... validation logic here ...
+
+        # Create validation context
+        validation_context = {
+            "timestamp": datetime.now().isoformat(),
+            "releaseName": release_name,
+            "endpoint": endpoint,
+            "status": "healthy",
+            "healthChecks": ["pod-ready", "service-available"],
+            "readinessChecks": ["http-200", "metrics-available"],
+        }
+
+        context_json = json.dumps(validation_context, indent=2)
+
+        # Return as file
+        return (
+            dag.directory()
+            .with_new_file("validation-context.json", context_json)
+            .file("validation-context.json")
+        )

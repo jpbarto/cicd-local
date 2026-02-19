@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 
 	"dagger/goserv/internal/dagger"
 
@@ -35,14 +36,41 @@ func (m *Goserv) IntegrationTest(
 	ctx context.Context,
 	// Source directory containing the project
 	source *dagger.Directory,
+	// Kubernetes config file content
+	kubeconfig *dagger.File,
 	// +optional
-	// Target URL where goserv is deployed (default: http://localhost:8080)
-	targetUrl string,
+	// AWS configuration file content
+	awsconfig *dagger.Secret,
+	// +optional
+	// Deployment context from Deploy function
+	deploymentContext *dagger.File,
+	// +optional
+	// Validation context from Validate function
+	validationContext *dagger.File,
 ) (string, error) {
-	// Print message
+	// Extract endpoint from deployment context if provided
+	var targetUrl string
+	if deploymentContext != nil {
+		contextContent, _ := deploymentContext.Contents(ctx)
+		var context map[string]interface{}
+		json.Unmarshal([]byte(contextContent), &context)
+		targetUrl = context["endpoint"].(string)
+	}
+
+	// Check validation status if provided
+	if validationContext != nil {
+		valContent, _ := validationContext.Contents(ctx)
+		var valContext map[string]interface{}
+		json.Unmarshal([]byte(valContent), &valContext)
+		if valContext["status"].(string) != "healthy" {
+			return "", nil // Skip tests if validation failed
+		}
+	}
+
+	// Run integration tests against targetUrl
 	output, err := dag.Container().
 		From("alpine:latest").
-		WithExec([]string{"echo", "this is the IntegrationTest function"}).
+		WithExec([]string{"echo", "Running integration tests against", targetUrl}).
 		Stdout(ctx)
 
 	if err != nil {
