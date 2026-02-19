@@ -357,8 +357,7 @@ print_step "Step 6: Run Integration Tests"
 # Build Dagger IntegrationTest command
 # Use host.docker.internal to reach localhost from inside Dagger container
 TEST_CMD="dagger -m cicd call integration-test --source=${SOURCE_DIR}"
-TEST_CMD="${TEST_CMD} --target-host=host.docker.internal"
-TEST_CMD="${TEST_CMD} --target-port=${LOCAL_PORT}"
+TEST_CMD="${TEST_CMD} --target-url=http://host.docker.internal:${LOCAL_PORT}"
 
 print_info "Running: ${TEST_CMD}"
 echo ""

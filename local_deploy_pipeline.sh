@@ -377,15 +377,15 @@ print_step "Step 3: Deploy Application"
 
 # Build Dagger Deploy command
 DEPLOY_CMD="dagger -m cicd call deploy --source=${SOURCE_DIR}"
-DEPLOY_CMD="${DEPLOY_CMD} --kubeconfig=file:${TEMP_KUBECONFIG}"
 
 # Add AWS config if available
 if [ "$USE_AWS_CONFIG" = true ]; then
     DEPLOY_CMD="${DEPLOY_CMD} --awsconfig=file:${TEMP_AWS_CONFIG}"
 fi
-DEPLOY_CMD="${DEPLOY_CMD} --release-name=${RELEASE_NAME}"
-DEPLOY_CMD="${DEPLOY_CMD} --namespace=${NAMESPACE}"
+
+DEPLOY_CMD="${DEPLOY_CMD} --kubeconfig=file:${TEMP_KUBECONFIG}"
 DEPLOY_CMD="${DEPLOY_CMD} --helm-repository=${HELM_REPOSITORY_URL}"
+DEPLOY_CMD="${DEPLOY_CMD} --container-repository=${CONTAINER_REPOSITORY_URL}"
 
 if [ "$RELEASE_CANDIDATE" = true ]; then
     DEPLOY_CMD="${DEPLOY_CMD} --release-candidate=true"
