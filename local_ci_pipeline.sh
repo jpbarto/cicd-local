@@ -175,7 +175,7 @@ fi
 # Step 1: Build
 ################################################################################
 
-print_step "Step 1: Build Docker Image"
+print_step "Step 1: Build Repository Artifacts"
 
 BUILD_CMD="dagger -m cicd call build --source=$SOURCE_DIR"
 if [ "$RELEASE_CANDIDATE" = true ]; then
