@@ -152,14 +152,14 @@ deploy_and_validate() {
     fi
     
     # Export deployment context to file
-    DEPLOY_CMD="${DEPLOY_CMD} export --path=./output/deploy/context.json"
+    DEPLOY_CMD="${DEPLOY_CMD} export --path=./output/deploy/deploymentContext"
     
     print_info "Running: ${DEPLOY_CMD}"
     echo ""
     
     if eval "$DEPLOY_CMD"; then
         print_success "Deployment completed"
-        print_info "Deployment context saved to: ./output/deploy/context.json"
+        print_info "Deployment context saved to: ./output/deploy/deploymentContext"
     else
         print_error "Deployment failed"
         return 1
@@ -185,9 +185,9 @@ deploy_and_validate() {
     VALIDATE_CMD="dagger -m cicd call validate --source=${SOURCE_DIR}"
     VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file:${HOME}/.kube/config"
     
-    # Pass deployment context if available
-    if [ -f "./output/deploy/context.json" ]; then
-        VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file:./output/deploy/context.json"
+    # Add deployment context if available
+    if [ -f "./output/deploy/deploymentContext" ]; then
+        VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file:./output/deploy/deploymentContext"
     fi
     
     if [ "$is_release_candidate" = "true" ]; then

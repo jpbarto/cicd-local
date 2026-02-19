@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"dagger/goserv/internal/dagger"
+
+	"dagger.io/dagger/dag"
 )
 
 // Validate runs the validation script to verify that the deployment is healthy and functioning correctly

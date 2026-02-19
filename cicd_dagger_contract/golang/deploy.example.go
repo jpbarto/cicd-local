@@ -50,11 +50,11 @@ func (m *Goserv) Deploy(
 
 	// Create deployment context
 	deploymentContext := map[string]interface{}{
-		"timestamp":     time.Now().Format(time.RFC3339),
-		"endpoint":      "http://goserv.default.svc.cluster.local:8080",
-		"releaseName":   "goserv",
-		"namespace":     "default",
-		"chartVersion":  "0.1.0",
+		"timestamp":      time.Now().Format(time.RFC3339),
+		"endpoint":       "http://goserv.default.svc.cluster.local:8080",
+		"releaseName":    "goserv",
+		"namespace":      "default",
+		"chartVersion":   "0.1.0",
 		"imageReference": imageRef,
 	}
 

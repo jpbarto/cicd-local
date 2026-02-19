@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"dagger/goserv/internal/dagger"
+
+	"dagger.io/dagger/dag"
 )
 
 // Deliver publishes the goserv container and Helm chart to repositories
@@ -31,12 +33,12 @@ func (m *Goserv) Deliver(
 
 	// Create delivery context
 	deliveryContext := map[string]interface{}{
-		"timestamp":          time.Now().Format(time.RFC3339),
-		"imageReference":     containerRepository + "/goserv:1.0.0",
-		"chartReference":     helmRepository + "/goserv:0.1.0",
+		"timestamp":           time.Now().Format(time.RFC3339),
+		"imageReference":      containerRepository + "/goserv:1.0.0",
+		"chartReference":      helmRepository + "/goserv:0.1.0",
 		"containerRepository": containerRepository,
-		"helmRepository":     helmRepository,
-		"releaseCandidate":   releaseCandidate,
+		"helmRepository":      helmRepository,
+		"releaseCandidate":    releaseCandidate,
 	}
 
 	contextJSON, err := json.MarshalIndent(deliveryContext, "", "  ")

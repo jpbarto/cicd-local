@@ -272,9 +272,9 @@ mkdir -p ./output/validate
 VALIDATE_CMD="dagger -m cicd call validate --source=${SOURCE_DIR}"
 VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file:${HOME}/.kube/config"
 
-# Pass deployment context if available
-if [ -f "./output/deploy/context.json" ]; then
-    VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file:./output/deploy/context.json"
+# Add deployment context if available
+if [ -f "./output/deploy/deploymentContext" ]; then
+    VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file:./output/deploy/deploymentContext"
 fi
 
 if [ "$RELEASE_CANDIDATE" = true ]; then
@@ -305,9 +305,9 @@ print_step "Step 6: Run Integration Tests"
 TEST_CMD="dagger -m cicd call integration-test --source=${SOURCE_DIR}"
 TEST_CMD="${TEST_CMD} --kubeconfig=file:${HOME}/.kube/config"
 
-# Pass deployment context if available
-if [ -f "./output/deploy/context.json" ]; then
-    TEST_CMD="${TEST_CMD} --deployment-context=file:./output/deploy/context.json"
+# Add deployment context if available
+if [ -f "./output/deploy/deploymentContext" ]; then
+    TEST_CMD="${TEST_CMD} --deployment-context=file:./output/deploy/deploymentContext"
 fi
 
 # Pass validation context if available

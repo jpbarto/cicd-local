@@ -432,9 +432,9 @@ if [ "$SKIP_VALIDATION" = false ]; then
         VALIDATE_CMD="${VALIDATE_CMD} --awsconfig=file:${TEMP_AWS_CONFIG}"
     fi
     
-    # Pass deployment context if available
-    if [ -f "./output/deploy/context.json" ]; then
-        VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file:./output/deploy/context.json"
+    # Add deployment context if available
+    if [ -f "./output/deploy/deploymentContext" ]; then
+        VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file:./output/deploy/deploymentContext"
     fi
     
     if [ "$RELEASE_CANDIDATE" = true ]; then

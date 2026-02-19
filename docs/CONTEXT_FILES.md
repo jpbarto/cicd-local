@@ -4,38 +4,43 @@
 
 The cicd-local contract uses context files to pass information between pipeline functions. These context files enable loosely-coupled communication without hardcoding assumptions about deployment targets, artifact locations, or validation results.
 
+**Important**: The format and contents of context files are **not strictly specified** by the contract. While JSON is the recommended format and sample structures are provided below, Dagger functions may use any format they choose. There are no required fields - the context file format is determined by the needs of your specific implementation.
+
 ## Context Types
 
 ### 1. Delivery Context (from Deliver function)
-- **Returns**: `File` (JSON format) containing published artifact metadata
-- **Export**: Pipeline scripts export this to `./output/deliver/deliveryContext`
+- **Returns**: `File` containing published artifact metadata
+- **Export Path**: `./output/deliver/deliveryContext` (no file extension)
 - **Used by**: Deploy function
+- **Recommended Format**: JSON with artifact references
 
 ### 2. Deployment Context (from Deploy function)
-- **Returns**: `File` (JSON format) containing deployment metadata
-- **Export**: Pipeline scripts export this to `./output/deploy/context.json`
+- **Returns**: `File` containing deployment metadata
+- **Export Path**: `./output/deploy/deploymentContext` (no file extension)
 - **Used by**: Validate and IntegrationTest functions
+- **Recommended Format**: JSON with endpoint and release information
 
 ### 3. Validation Context (from Validate function)
-- **Returns**: `File` (JSON format) containing validation results and metadata
-- **Export**: Pipeline scripts export this to `./output/validate/validationContext`
+- **Returns**: `File` containing validation results and metadata
+- **Export Path**: `./output/validate/validationContext` (no file extension)
 - **Used by**: IntegrationTest function
+- **Recommended Format**: JSON with health check results
 
 ## Contract Changes
 
 ### Deliver Function
 - **Returns**: `File` containing delivery context (previously returned `string`)
-- **Contents**: Published artifact references, versions, repository URLs
+- **Suggested Contents**: Published artifact references, versions, repository URLs
 
 ### Deploy Function
 - **Returns**: `File` containing deployment context
 - **New Parameter**: `deliveryContext` (optional) - File from Deliver function
-- **Export**: Pipeline scripts export to `./output/deploy/context.json`
+- **Suggested Contents**: Endpoint URL, release name, namespace, versions
 
 ### Validate Function
 - **Returns**: `File` containing validation context (previously returned `string`)
-- **New Parameter**: `deploymentContext` (optional) - File from Deploy function
-- **Export**: Pipeline scripts export to `./output/validate/validationContext`
+- **New Parameter**: `deploymentContext` (required) - File from Deploy function
+- **Suggested Contents**: Validation status, health check results, endpoint
 
 ### IntegrationTest Function
 - **New Parameter**: `kubeconfig` (required) - Kubernetes configuration for access
@@ -44,101 +49,82 @@ The cicd-local contract uses context files to pass information between pipeline 
 - **New Parameter**: `validationContext` (optional) - File from Validate function
 - **Removed**: `targetUrl` parameter (use deploymentContext endpoint instead)
 
-## Context File JSON Formats
+## Recommended JSON Formats
 
-### Delivery Context Format
+The following JSON structures are **recommendations only**. Your implementation may use different formats, different fields, or even non-JSON formats as needed.
+
+### Delivery Context Format (Recommended)
 
 The Deliver function should return a JSON file with published artifact information:
 
 ```json
 {
-  "containerImage": "ttl.sh/myapp:1.2.3",
-  "helmChart": "oci://ttl.sh/charts/myapp:1.2.3",
+  "timestamp": "2024-02-19T10:30:00Z",
+  "imageReference": "ttl.sh/myapp:1.2.3",
+  "chartReference": "oci://ttl.sh/charts/myapp:1.2.3",
   "version": "1.2.3",
-  "architecture": ["linux/amd64", "linux/arm64"],
-  "repositories": {
-    "container": "ttl.sh",
-    "helm": "oci://ttl.sh"
-  },
-  "metadata": {
-    "publishedAt": "2024-02-19T10:30:00Z",
-    "releaseCandidate": false
-  }
+  "containerRepository": "ttl.sh",
+  "helmRepository": "oci://ttl.sh",
+  "releaseCandidate": false
 }
 ```
 
-**Required Fields:**
-- `containerImage` (string): Full container image reference
-- `helmChart` (string): Full Helm chart reference
+**Common Fields** (all optional):
+- `timestamp` (string): ISO 8601 timestamp
+- `imageReference` (string): Full container image reference
+- `chartReference` (string): Full Helm chart reference
 - `version` (string): Published version
+- `containerRepository` (string): Container registry URL
+- `helmRepository` (string): Helm repository URL
+- `releaseCandidate` (boolean): Whether this is a release candidate
 
-**Optional Fields:**
-- `architecture` (array): List of architectures
-- `repositories` (object): Repository URLs
-- `metadata` (object): Additional publish-time information
+### Deployment Context Format (Recommended)
 
-### Deployment Context JSON Format
-
-The Deploy function should return a JSON file with deployment information:
+Example JSON structure for deployment information:
 
 ```json
 {
+  "timestamp": "2024-02-19T10:35:00Z",
   "endpoint": "http://myapp.namespace.svc.cluster.local:8080",
-  "healthCheckUrl": "http://myapp.namespace.svc.cluster.local:8080/health",
+  "releaseName": "myapp",
   "namespace": "production",
-  "releaseName": "myapp-v1.2.3",
-  "version": "1.2.3",
-  "metadata": {
-    "serviceName": "myapp",
-    "port": 8080,
-    "protocol": "http",
-    "deployedAt": "2024-02-19T10:35:00Z"
-  }
+  "chartVersion": "1.2.3",
+  "imageReference": "ttl.sh/myapp:1.2.3"
 }
 ```
 
-**Required Fields:**
+**Common Fields** (all optional):
+- `timestamp` (string): ISO 8601 timestamp
 - `endpoint` (string): Primary URL where the application is accessible
-
-**Optional Fields:**
-- `healthCheckUrl` (string): Health check endpoint
-- `namespace` (string): Kubernetes namespace
 - `releaseName` (string): Helm release name or deployment identifier
-- `version` (string): Deployed version
-- `metadata` (object): Additional deployment-specific information
+- `namespace` (string): Kubernetes namespace
+- `chartVersion` (string): Deployed Helm chart version
+- `imageReference` (string): Container image reference used
 
-### Validation Context JSON Format
+### Validation Context Format (Recommended)
 
-The Validate function should return a JSON file with validation results:
+Example JSON structure for validation results:
 
 ```json
 {
-  "status": "passed",
-  "checks": {
-    "deployment": "healthy",
-    "replicas": "ready",
-    "endpoints": "responding",
-    "version": "correct"
-  },
-  "metrics": {
-    "podsReady": 3,
-    "podsTotal": 3,
-    "responseTime": "45ms"
-  },
-  "metadata": {
-    "validatedAt": "2024-02-19T10:36:00Z",
-    "validator": "dagger-validate-v1"
-  }
+```json
+{
+  "timestamp": "2024-02-19T10:36:00Z",
+  "releaseName": "myapp",
+  "endpoint": "http://myapp.namespace.svc.cluster.local:8080",
+  "status": "healthy",
+  "healthChecks": ["pod-ready", "service-available"],
+  "readinessChecks": ["http-200", "metrics-available"]
 }
 ```
 
-**Required Fields:**
-- `status` (string): Overall validation status ("passed", "failed", "warning")
-
-**Optional Fields:**
-- `checks` (object): Individual check results
-- `metrics` (object): Numeric validation metrics
-- `metadata` (object): Additional validation information
+**Common Fields** (all optional):
+- `timestamp` (string): ISO 8601 timestamp
+- `releaseName` (string): Name of the deployment/release
+- `endpoint` (string): Application endpoint URL
+- `status` (string): Overall validation status (e.g., "healthy", "degraded", "failed")
+- `healthChecks` (array): List of health checks performed
+- `readinessChecks` (array): List of readiness checks performed
 
 ## Implementation Guide
 
@@ -558,101 +544,49 @@ Error: permission denied reading context file
 
 **Solution:**
 ```bash
-# Fix permissions
-chmod 644 ./output/*/context.json
+# Fix permissions on all context files
+chmod 644 ./output/deliver/deliveryContext
+chmod 644 ./output/deploy/deploymentContext
+chmod 644 ./output/validate/validationContext
 
 # Or regenerate with correct permissions
 rm -rf ./output && ./local_deploy_pipeline.sh
-```
-    --target-url=http://localhost:8080 \
-    --deployment-context=file:./output/deploy/context.json
-```
-
-## Benefits
-
-1. **Flexibility**: Deploy targets (Kubernetes, Docker, cloud services) can provide relevant information
-2. **Decoupling**: IntegrationTest/Validate don't need to know deployment internals
-3. **Extensibility**: Add new metadata fields without changing function signatures
-4. **Backward Compatibility**: Existing parameter-based calls still work
-5. **Convention over Configuration**: Sensible defaults when context not available
-
-## Migration Guide
-
-### For Existing Implementations
-
-1. **Update Deploy function** to return `File` instead of `string`
-2. **Generate deployment context JSON** with at minimum `endpoint` field
-3. **Add optional deploymentContext parameter** to IntegrationTest/Validate
-4. **Read context when provided**, fall back to explicit parameters
-5. **Test with pipeline scripts** that automatically handle context passing
-
-### Example Migration
-
-**Before:**
-```go
-func (m *MyApp) Deploy(...) (string, error) {
-    // deployment logic
-    return "Deployed successfully", nil
-}
-```
-
-**After:**
-```go
-func (m *MyApp) Deploy(...) (*dagger.File, error) {
-    // deployment logic
-    
-    context := map[string]interface{}{
-        "endpoint": "http://myapp:8080",
-    }
-    contextJSON, _ := json.Marshal(context)
-    
-    return dag.Container().
-        From("alpine:latest").
-        WithNewFile("/deployment-context.json", string(contextJSON)).
-        File("/deployment-context.json"), nil
-}
 ```
 
 ## Best Practices
 
 ### Context File Creation
 
-1. **Always include required fields** for each context type:
-   - deliveryContext: `imageReference`, `chartReference`, `timestamp`
-   - deploymentContext: `endpoint`, `releaseName`, `namespace`, `timestamp`
-   - validationContext: `status`, `endpoint`, `timestamp`
+1. **Choose an appropriate format** for your needs:
+   - JSON is recommended for broad compatibility and ease of parsing
+   - Plain text, YAML, or custom formats are also acceptable
+   - Consider what your consuming functions need to parse
 
-2. **Use ISO 8601 timestamps** for consistency:
-   ```python
-   datetime.now().isoformat()  # Python
-   ```
-   ```go
-   time.Now().Format(time.RFC3339)  // Go
-   ```
+2. **Include helpful metadata** when using structured formats:
+   - Timestamps for debugging and traceability
+   - Version information for compatibility checking
+   - Status indicators for decision-making
 
-3. **Include version information** for traceability:
-   ```json
-   {
-     "version": "1.2.3",
-     "imageTag": "myapp:1.2.3",
-     "chartVersion": "0.5.0"
-   }
-   ```
+3. **Use consistent naming** within your implementation:
+   - If using JSON, keep field names consistent across contexts
+   - Document custom fields in your project README
 
-4. **Use absolute URLs** with protocols:
-   ```json
-   {
-     "endpoint": "https://myapp.example.com",
-     "healthCheckUrl": "https://myapp.example.com/health"
-   }
-   ```
+4. **Keep context files focused**:
+   - Include information needed by downstream functions
+   - Avoid including sensitive data (use Secrets for credentials)
+   - Consider file size - keep contexts reasonably small
 
 ### Context File Consumption
 
-1. **Check for file existence** before reading
-2. **Validate JSON structure** after parsing
-3. **Provide fallback values** for optional fields
-4. **Add defensive error handling** for missing fields
+1. **Handle missing contexts gracefully**:
+   - Context parameters are typically optional
+   - Provide reasonable defaults when contexts aren't available
+   - Document what happens when contexts are omitted
+
+2. **Validate format before parsing**:
+   - Check for file existence before reading
+   - Handle parsing errors appropriately
+   - Provide clear error messages for format issues
 
 **Example:**
 ```go
@@ -662,6 +596,11 @@ if deploymentContext != nil {
         return "", fmt.Errorf("failed to read deployment context: %w", err)
     }
     var context map[string]interface{}
+    if err := json.Unmarshal([]byte(contextContent), &context); err != nil {
+        return "", fmt.Errorf("invalid deployment context format: %w", err)
+    }
+    targetUrl = context["endpoint"].(string)
+}
     if err := json.Unmarshal([]byte(contextContent), &context); err != nil {
         return "", fmt.Errorf("invalid deployment context JSON: %w", err)
     }
