@@ -375,7 +375,10 @@ fi
 
 print_step "Step 3: Deploy Application"
 
-# Build Dagger Deploy command
+# Create deployment output directory
+mkdir -p ./output/deploy
+
+# Build Dagger Deploy command - export deployment context
 DEPLOY_CMD="dagger -m cicd call deploy --source=${SOURCE_DIR}"
 
 # Add AWS config if available
@@ -391,11 +394,15 @@ if [ "$RELEASE_CANDIDATE" = true ]; then
     DEPLOY_CMD="${DEPLOY_CMD} --release-candidate=true"
 fi
 
+# Export deployment context to file
+DEPLOY_CMD="${DEPLOY_CMD} export --path=./output/deploy/context.json"
+
 print_info "Running: ${DEPLOY_CMD}"
 echo ""
 
 if eval "$DEPLOY_CMD"; then
     print_success "Application deployed successfully"
+    print_info "Deployment context saved to: ./output/deploy/context.json"
 else
     print_error "Deployment failed"
     exit 1
@@ -413,6 +420,11 @@ if [ "$SKIP_VALIDATION" = false ]; then
     VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file:${TEMP_KUBECONFIG}"
     VALIDATE_CMD="${VALIDATE_CMD} --release-name=${RELEASE_NAME}"
     VALIDATE_CMD="${VALIDATE_CMD} --namespace=${NAMESPACE}"
+    
+    # Pass deployment context if available
+    if [ -f "./output/deploy/context.json" ]; then
+        VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file:./output/deploy/context.json"
+    fi
     
     if [ "$RELEASE_CANDIDATE" = true ]; then
         VALIDATE_CMD="${VALIDATE_CMD} --release-candidate=true"

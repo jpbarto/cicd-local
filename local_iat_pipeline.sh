@@ -48,8 +48,6 @@ SKIP_DEPLOY=false
 SOURCE_DIR="${PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 COLIMA_PROFILE="acme-local"
 KUBECTL_CONTEXT="colima-${COLIMA_PROFILE}"
-RELEASE_NAME="goserv"
-NAMESPACE="goserv"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -120,7 +118,6 @@ print_section "Local IAT Pipeline Starting"
 print_info "Source directory: $SOURCE_DIR"
 print_info "Colima profile: $COLIMA_PROFILE"
 print_info "Kubectl context: $KUBECTL_CONTEXT"
-print_info "Release name: $RELEASE_NAME"
 print_info "Release candidate: $RELEASE_CANDIDATE"
 print_info "Skip deploy: $SKIP_DEPLOY"
 
@@ -227,48 +224,34 @@ fi
 if [ "$SKIP_DEPLOY" = false ]; then
     print_step "Step 3: Deploy Application"
     
-    # Build Dagger Deploy command
+    # Create deployment output directory
+    mkdir -p ./output/deploy
+    
+    # Build Dagger Deploy command - export deployment context
     DEPLOY_CMD="dagger -m cicd call deploy --source=${SOURCE_DIR}"
     DEPLOY_CMD="${DEPLOY_CMD} --kubeconfig=file:${HOME}/.kube/config"
-    DEPLOY_CMD="${DEPLOY_CMD} --release-name=${RELEASE_NAME}"
     DEPLOY_CMD="${DEPLOY_CMD} --helm-repository=${HELM_REPOSITORY_URL}"
+    DEPLOY_CMD="${DEPLOY_CMD} --container-repository=${CONTAINER_REPOSITORY_URL}"
     
     if [ "$RELEASE_CANDIDATE" = true ]; then
         DEPLOY_CMD="${DEPLOY_CMD} --release-candidate=true"
     fi
+    
+    # Export deployment context to file
+    DEPLOY_CMD="${DEPLOY_CMD} export --path=./output/deploy/context.json"
     
     print_info "Running: ${DEPLOY_CMD}"
     echo ""
     
     if eval "$DEPLOY_CMD"; then
         print_success "Application deployed successfully"
+        print_info "Deployment context saved to: ./output/deploy/context.json"
     else
         print_error "Deployment failed"
         exit 1
     fi
-    
-    # Wait for deployment to be ready
-    print_info "Waiting for deployment to be ready..."
-    if kubectl rollout status deployment/${RELEASE_NAME} -n ${NAMESPACE} --timeout=120s; then
-        print_success "Deployment is ready"
-    else
-        print_error "Deployment did not become ready in time"
-        echo ""
-        echo "Pod status:"
-        kubectl get pods -n ${NAMESPACE} -l app.kubernetes.io/name=goserv
-        exit 1
-    fi
 else
     print_warning "Step 3: Skipping deployment (--skip-deploy flag set)"
-    
-    # Verify existing deployment
-    print_info "Verifying existing deployment..."
-    if kubectl get deployment/${RELEASE_NAME} -n ${NAMESPACE} &> /dev/null; then
-        print_success "Deployment '${RELEASE_NAME}' exists"
-    else
-        print_error "Deployment '${RELEASE_NAME}' not found in namespace '${NAMESPACE}'"
-        exit 1
-    fi
 fi
 
 ################################################################################
@@ -280,8 +263,11 @@ print_step "Step 4: Validate Deployment"
 # Build Dagger Validate command
 VALIDATE_CMD="dagger -m cicd call validate --source=${SOURCE_DIR}"
 VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file:${HOME}/.kube/config"
-VALIDATE_CMD="${VALIDATE_CMD} --release-name=${RELEASE_NAME}"
-VALIDATE_CMD="${VALIDATE_CMD} --namespace=${NAMESPACE}"
+
+# Pass deployment context if available
+if [ -f "./output/deploy/context.json" ]; then
+    VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file:./output/deploy/context.json"
+fi
 
 if [ "$RELEASE_CANDIDATE" = true ]; then
     VALIDATE_CMD="${VALIDATE_CMD} --release-candidate=true"
@@ -298,66 +284,28 @@ else
 fi
 
 ################################################################################
-# Step 5: Set Up Port Forward for Testing
-################################################################################
-
-print_step "Step 5: Set Up Port Forward"
-
-# Find an available local port
-LOCAL_PORT=8080
-while lsof -Pi :${LOCAL_PORT} -sTCP:LISTEN -t >/dev/null 2>&1; do
-    LOCAL_PORT=$((LOCAL_PORT + 1))
-done
-
-print_info "Using local port: ${LOCAL_PORT}"
-
-# Start port-forward in background
-print_info "Starting port-forward to ${RELEASE_NAME} service..."
-kubectl port-forward -n ${NAMESPACE} svc/${RELEASE_NAME} ${LOCAL_PORT}:80 &> /tmp/kubectl-port-forward.log &
-PORT_FORWARD_PID=$!
-
-# Function to cleanup port-forward on exit
-cleanup_port_forward() {
-    if [ -n "${PORT_FORWARD_PID:-}" ]; then
-        print_info "Stopping port-forward (PID: ${PORT_FORWARD_PID})..."
-        kill ${PORT_FORWARD_PID} 2>/dev/null || true
-        wait ${PORT_FORWARD_PID} 2>/dev/null || true
-    fi
-}
-
-trap cleanup_port_forward EXIT
-
-# Wait for port-forward to be ready
-print_info "Waiting for port-forward to be ready..."
-MAX_RETRIES=30
-RETRY_COUNT=0
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -s -f -o /dev/null --max-time 1 "http://localhost:${LOCAL_PORT}/health" 2>/dev/null; then
-        print_success "Port-forward is ready"
-        break
-    fi
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    sleep 1
-done
-
-if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-    print_error "Port-forward did not become ready in time"
-    echo ""
-    echo "Port-forward logs:"
-    cat /tmp/kubectl-port-forward.log
-    exit 1
-fi
-
-################################################################################
 # Step 6: Run Integration Tests using Dagger
 ################################################################################
 
 print_step "Step 6: Run Integration Tests"
 
+# Determine target URL - use from deployment context if available, otherwise construct
+if [ -f "./output/deploy/context.json" ] && command -v jq &> /dev/null; then
+    TARGET_URL=$(jq -r '.endpoint // "http://host.docker.internal:${LOCAL_PORT}"' ./output/deploy/context.json)
+    print_info "Using target URL from deployment context: ${TARGET_URL}"
+else
+    TARGET_URL="http://host.docker.internal:${LOCAL_PORT}"
+    print_info "Using default target URL: ${TARGET_URL}"
+fi
+
 # Build Dagger IntegrationTest command
-# Use host.docker.internal to reach localhost from inside Dagger container
 TEST_CMD="dagger -m cicd call integration-test --source=${SOURCE_DIR}"
-TEST_CMD="${TEST_CMD} --target-url=http://host.docker.internal:${LOCAL_PORT}"
+TEST_CMD="${TEST_CMD} --target-url=${TARGET_URL}"
+
+# Pass deployment context if available
+if [ -f "./output/deploy/context.json" ]; then
+    TEST_CMD="${TEST_CMD} --deployment-context=file:./output/deploy/context.json"
+fi
 
 print_info "Running: ${TEST_CMD}"
 echo ""
@@ -380,22 +328,13 @@ if [ $TEST_RESULT -eq 0 ]; then
     print_success "All steps completed successfully!"
     echo ""
     print_info "Deployment details:"
-    echo "  • Namespace: ${NAMESPACE}"
-    echo "  • Release: ${RELEASE_NAME}"
     echo "  • Version: ${VERSION}"
     echo ""
     print_info "Cleanup:"
-    echo "  • To remove deployment: helm uninstall ${RELEASE_NAME} -n ${NAMESPACE}"
     echo "  • To stop colima: colima stop ${COLIMA_PROFILE}"
     echo ""
     exit 0
 else
     print_error "Integration tests failed"
-    echo ""
-    print_info "Troubleshooting:"
-    echo "  • Check pod logs: kubectl logs -n ${NAMESPACE} -l app.kubernetes.io/name=goserv"
-    echo "  • Check pod status: kubectl get pods -n ${NAMESPACE}"
-    echo "  • Check service: kubectl get svc -n ${NAMESPACE} ${RELEASE_NAME}"
-    echo ""
     exit 1
 fi

@@ -54,19 +54,23 @@
         "golang": [
           { "name": "ctx", "type": "context.Context", "required": true },
           { "name": "source", "type": "*dagger.Directory", "required": true },
-          { "name": "targetUrl", "type": "string", "required": false }
+          { "name": "targetUrl", "type": "string", "required": false },
+          { "name": "deploymentContext", "type": "*dagger.File", "required": false }
         ],
         "python": [
           { "name": "source", "type": "dagger.Directory", "required": true },
-          { "name": "target_url", "type": "str", "required": false }
+          { "name": "target_url", "type": "str", "required": false },
+          { "name": "deployment_context", "type": "dagger.File", "required": false }
         ],
         "java": [
           { "name": "source", "type": "Directory", "required": true },
-          { "name": "targetUrl", "type": "String", "required": false }
+          { "name": "targetUrl", "type": "String", "required": false },
+          { "name": "deploymentContext", "type": "File", "required": false }
         ],
         "typescript": [
           { "name": "source", "type": "Directory", "required": true },
-          { "name": "targetUrl", "type": "string", "required": false }
+          { "name": "targetUrl", "type": "string", "required": false },
+          { "name": "deploymentContext", "type": "File", "required": false }
         ]
       }
     },
@@ -106,8 +110,8 @@
       }
     },
     "Deploy": {
-      "description": "Deploys the repository",
-      "returns": "string",
+      "description": "Deploys the repository and returns deployment context",
+      "returns": "File",
       "parameters": {
         "golang": [
           { "name": "ctx", "type": "context.Context", "required": true },
@@ -155,7 +159,8 @@
           { "name": "releaseName", "type": "string", "required": false },
           { "name": "namespace", "type": "string", "required": false },
           { "name": "expectedVersion", "type": "string", "required": false },
-          { "name": "releaseCandidate", "type": "bool", "required": false }
+          { "name": "releaseCandidate", "type": "bool", "required": false },
+          { "name": "deploymentContext", "type": "*dagger.File", "required": false }
         ],
         "python": [
           { "name": "source", "type": "dagger.Directory", "required": true },
@@ -163,7 +168,8 @@
           { "name": "release_name", "type": "str", "required": false },
           { "name": "namespace", "type": "str", "required": false },
           { "name": "expected_version", "type": "str", "required": false },
-          { "name": "release_candidate", "type": "bool", "required": false }
+          { "name": "release_candidate", "type": "bool", "required": false },
+          { "name": "deployment_context", "type": "dagger.File", "required": false }
         ],
         "java": [
           { "name": "source", "type": "Directory", "required": true },
@@ -171,7 +177,8 @@
           { "name": "releaseName", "type": "String", "required": false },
           { "name": "namespace", "type": "String", "required": false },
           { "name": "expectedVersion", "type": "String", "required": false },
-          { "name": "releaseCandidate", "type": "boolean", "required": false }
+          { "name": "releaseCandidate", "type": "boolean", "required": false },
+          { "name": "deploymentContext", "type": "File", "required": false }
         ],
         "typescript": [
           { "name": "source", "type": "Directory", "required": true },
@@ -179,7 +186,8 @@
           { "name": "releaseName", "type": "string", "required": false },
           { "name": "namespace", "type": "string", "required": false },
           { "name": "expectedVersion", "type": "string", "required": false },
-          { "name": "releaseCandidate", "type": "boolean", "required": false }
+          { "name": "releaseCandidate", "type": "boolean", "required": false },
+          { "name": "deploymentContext", "type": "File", "required": false }
         ]
       }
     }

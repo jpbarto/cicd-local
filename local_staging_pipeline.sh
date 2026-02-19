@@ -133,22 +133,28 @@ deploy_and_validate() {
     
     print_phase "Deploying $version_label (v$version)"
     
-    # Build Dagger Deploy command
+    # Create deployment output directory
+    mkdir -p ./output/deploy
+    
+    # Build Dagger Deploy command - export deployment context
     DEPLOY_CMD="dagger -m cicd call deploy --source=${SOURCE_DIR}"
     DEPLOY_CMD="${DEPLOY_CMD} --kubeconfig=file:${HOME}/.kube/config"
-    DEPLOY_CMD="${DEPLOY_CMD} --release-name=${RELEASE_NAME}"
-    DEPLOY_CMD="${DEPLOY_CMD} --namespace=${NAMESPACE}"
     DEPLOY_CMD="${DEPLOY_CMD} --helm-repository=${HELM_REPOSITORY_URL}"
+    DEPLOY_CMD="${DEPLOY_CMD} --container-repository=${CONTAINER_REPOSITORY_URL}"
     
     if [ "$is_release_candidate" = "true" ]; then
         DEPLOY_CMD="${DEPLOY_CMD} --release-candidate=true"
     fi
+    
+    # Export deployment context to file
+    DEPLOY_CMD="${DEPLOY_CMD} export --path=./output/deploy/context.json"
     
     print_info "Running: ${DEPLOY_CMD}"
     echo ""
     
     if eval "$DEPLOY_CMD"; then
         print_success "Deployment completed"
+        print_info "Deployment context saved to: ./output/deploy/context.json"
     else
         print_error "Deployment failed"
         return 1
@@ -172,6 +178,11 @@ deploy_and_validate() {
     VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file:${HOME}/.kube/config"
     VALIDATE_CMD="${VALIDATE_CMD} --release-name=${RELEASE_NAME}"
     VALIDATE_CMD="${VALIDATE_CMD} --namespace=${NAMESPACE}"
+    
+    # Pass deployment context if available
+    if [ -f "./output/deploy/context.json" ]; then
+        VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file:./output/deploy/context.json"
+    fi
     
     if [ "$is_release_candidate" = "true" ]; then
         VALIDATE_CMD="${VALIDATE_CMD} --release-candidate=true"
