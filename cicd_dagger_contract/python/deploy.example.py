@@ -11,10 +11,10 @@ class Deploy:
     async def deploy(
         self,
         source: dagger.Directory,
-        kubeconfig: dagger.Secret,
+        awsconfig: Optional[dagger.Secret] = None,
+        kubeconfig: Optional[dagger.Secret] = None,
         helm_repository: Optional[str] = "oci://ttl.sh",
-        release_name: Optional[str] = "goserv",
-        namespace: Optional[str] = "goserv",
+        container_repository: Optional[str] = "ttl.sh",
         release_candidate: Optional[bool] = False,
     ) -> str:
         """Deploy installs the Helm chart from a Helm repository to a Kubernetes cluster
@@ -23,10 +23,10 @@ class Deploy:
         
         Args:
             source: Source directory containing the project
+            awsconfig: AWS configuration file content
             kubeconfig: Kubernetes config file content
             helm_repository: Helm chart repository URL (default: oci://ttl.sh)
-            release_name: Release name (default: goserv)
-            namespace: Kubernetes namespace (default: goserv)
+            container_repository: Container repository URL (default: ttl.sh)
             release_candidate: Build as release candidate (appends -rc to version tag)
         
         Returns:

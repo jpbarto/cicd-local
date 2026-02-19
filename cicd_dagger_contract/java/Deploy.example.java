@@ -12,19 +12,19 @@ public class Deploy {
      * Note: This function should have cache = "never" configuration
      *
      * @param source Source directory containing the project
+     * @param awsconfig AWS configuration file content
      * @param kubeconfig Kubernetes config file content
      * @param helmRepository Helm chart repository URL (default: oci://ttl.sh)
-     * @param releaseName Release name (default: goserv)
-     * @param namespace Kubernetes namespace (default: goserv)
+     * @param containerRepository Container repository URL (default: ttl.sh)
      * @param releaseCandidate Build as release candidate (appends -rc to version tag)
      * @return Deployment output string
      */
     public String deploy(
             Directory source,
+            Secret awsconfig,
             Secret kubeconfig,
             String helmRepository,
-            String releaseName,
-            String namespace,
+            String containerRepository,
             boolean releaseCandidate) throws Exception {
         // Print message
         String output = Dagger.dag().container()

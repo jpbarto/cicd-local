@@ -32,15 +32,13 @@ export class Test {
    * IntegrationTest runs integration tests against a deployed goserv instance
    *
    * @param source Source directory containing the project
-   * @param targetHost Target host where goserv is deployed (default: localhost)
-   * @param targetPort Target port (default: 8080)
+   * @param targetUrl Target URL where goserv is deployed (default: http://localhost:8080)
    * @returns Test output string
    */
   @func()
   async integrationTest(
     source: Directory,
-    targetHost: string = "localhost",
-    targetPort: string = "8080"
+    targetUrl: string = "http://localhost:8080"
   ): Promise<string> {
     // Print message
     const output = await dag

@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"dagger/goserv/internal/dagger"
+
+	"dagger.io/dagger/dag"
 )
 
 // UnitTest runs the goserv container and executes unit tests against it
@@ -34,11 +36,8 @@ func (m *Goserv) IntegrationTest(
 	// Source directory containing the project
 	source *dagger.Directory,
 	// +optional
-	// Target host where goserv is deployed (default: localhost)
-	targetHost string,
-	// +optional
-	// Target port (default: 8080)
-	targetPort string,
+	// Target URL where goserv is deployed (default: http://localhost:8080)
+	targetUrl string,
 ) (string, error) {
 	// Print message
 	output, err := dag.Container().

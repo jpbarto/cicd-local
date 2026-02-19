@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"dagger/goserv/internal/dagger"
+
+	"dagger.io/dagger/dag"
 )
 
 // Deploy installs the Helm chart from a Helm repository to a Kubernetes cluster
@@ -12,17 +14,18 @@ func (m *Goserv) Deploy(
 	ctx context.Context,
 	// Source directory containing the project
 	source *dagger.Directory,
+	// +optional
+	// AWS configuration file content
+	awsconfig *dagger.Secret,
+	// +optional
 	// Kubernetes config file content
 	kubeconfig *dagger.Secret,
 	// +optional
 	// Helm chart repository URL (default: oci://ttl.sh)
 	helmRepository string,
 	// +optional
-	// Release name (default: goserv)
-	releaseName string,
-	// +optional
-	// Kubernetes namespace (default: goserv)
-	namespace string,
+	// Container repository URL (default: ttl.sh)
+	containerRepository string,
 	// +optional
 	// Build as release candidate (appends -rc to version tag)
 	releaseCandidate bool,

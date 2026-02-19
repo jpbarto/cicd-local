@@ -36,15 +36,13 @@ class Test:
     async def integration_test(
         self,
         source: dagger.Directory,
-        target_host: Optional[str] = "localhost",
-        target_port: Optional[str] = "8080",
+        target_url: Optional[str] = "http://localhost:8080",
     ) -> str:
         """IntegrationTest runs integration tests against a deployed goserv instance
         
         Args:
             source: Source directory containing the project
-            target_host: Target host where goserv is deployed (default: localhost)
-            target_port: Target port (default: 8080)
+            target_url: Target URL where goserv is deployed (default: http://localhost:8080)
         
         Returns:
             Test output string
