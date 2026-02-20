@@ -26,7 +26,7 @@ public class Deploy {
      */
     public File deploy(
             Directory source,
-            File kubeconfig,
+            Secret kubeconfig,
             Secret awsconfig,
             String helmRepository,
             String containerRepository,

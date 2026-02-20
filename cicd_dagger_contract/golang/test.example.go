@@ -37,7 +37,7 @@ func (m *Goserv) IntegrationTest(
 	// Source directory containing the project
 	source *dagger.Directory,
 	// Kubernetes config file content
-	kubeconfig *dagger.File,
+	kubeconfig *dagger.Secret,
 	// +optional
 	// AWS configuration file content
 	awsconfig *dagger.Secret,

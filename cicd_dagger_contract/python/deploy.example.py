@@ -13,7 +13,7 @@ class Deploy:
     async def deploy(
         self,
         source: dagger.Directory,
-        kubeconfig: Optional[dagger.File] = None,
+        kubeconfig: Optional[dagger.Secret] = None,
         awsconfig: Optional[dagger.Secret] = None,
         helm_repository: Optional[str] = "oci://ttl.sh",
         container_repository: Optional[str] = "ttl.sh",

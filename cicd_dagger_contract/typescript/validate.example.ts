@@ -2,30 +2,37 @@
  * Validate module for Goserv
  */
 
-import { dag, Container, File, Secret, object, func } from "@dagger.io/dagger"
+import { dag, Container, Directory, File, Secret, object, func } from "@dagger.io/dagger"
 
 @object()
 export class Validate {
   /**
    * Validate runs the validation script to verify that the deployment is healthy and functioning correctly
    *
+   * @param source Source directory containing the project
    * @param kubeconfig Kubernetes config file content
-   * @param deploymentContext Deployment context from Deploy function
    * @param awsconfig AWS configuration file content
+   * @param releaseCandidate Build as release candidate (appends -rc to version tag)
+   * @param deploymentContext Deployment context from Deploy function
    * @returns File containing validation context
    */
   @func()
   async validate(
-    kubeconfig: File,
-    deploymentContext: File,
-    awsconfig?: Secret
+    source: Directory,
+    kubeconfig: Secret,
+    awsconfig?: Secret,
+    releaseCandidate: boolean = false,
+    deploymentContext?: File
   ): Promise<File> {
-    // Extract deployment information from context
-    const contextContent = await deploymentContext.contents()
-    const depContext = JSON.parse(contextContent)
-    
-    const endpoint = depContext.endpoint
-    const releaseName = depContext.releaseName
+    // Extract deployment information from context if provided
+    let endpoint: string | undefined
+    let releaseName: string | undefined
+    if (deploymentContext) {
+      const contextContent = await deploymentContext.contents()
+      const depContext = JSON.parse(contextContent)
+      endpoint = depContext.endpoint
+      releaseName = depContext.releaseName
+    }
 
     // Perform validation checks
     // ... validation logic here ...

@@ -13,21 +13,29 @@ import (
 // Validate runs the validation script to verify that the deployment is healthy and functioning correctly
 func (m *Goserv) Validate(
 	ctx context.Context,
+	// Source directory containing the project
+	source *dagger.Directory,
 	// Kubernetes config file content
-	kubeconfig *dagger.File,
-	// Deployment context from Deploy function
-	deploymentContext *dagger.File,
+	kubeconfig *dagger.Secret,
 	// +optional
 	// AWS configuration file content
 	awsconfig *dagger.Secret,
+	// +optional
+	// Build as release candidate (appends -rc to version tag)
+	releaseCandidate bool,
+	// +optional
+	// Deployment context from Deploy function
+	deploymentContext *dagger.File,
 ) (*dagger.File, error) {
-	// Extract deployment information from context
-	contextContent, err := deploymentContext.Contents(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+	// Extract deployment information from context if provided
 	var depContext map[string]interface{}
+	if deploymentContext != nil {
+		contextContent, err := deploymentContext.Contents(ctx)
+		if err != nil {
+			return nil, err
+		}
+		json.Unmarshal([]byte(contextContent), &depContext)
+	}
 	if err := json.Unmarshal([]byte(contextContent), &depContext); err != nil {
 		return nil, err
 	}

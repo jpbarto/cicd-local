@@ -51,6 +51,26 @@ kubectl get nodes
 
 ## Usage
 
+### Initialize New Project
+
+Quickly set up a new project with Dagger CI/CD:
+
+```bash
+# Navigate to your project
+cd ~/dev/my-project
+
+# Initialize with your preferred language
+cicd-local init go
+cicd-local init python my-app-name
+cicd-local init java
+cicd-local init typescript
+```
+
+This creates a `cicd/` directory with:
+- Initialized Dagger module
+- Example function implementations
+- Ready-to-customize contract code
+
 ### Validate Contract
 
 Ensure your Dagger functions conform to the cicd-local contract:
@@ -95,6 +115,7 @@ cicd-local staging
 
 | Command | Description |
 |---------|-------------|
+| `init` | Initialize Dagger CI/CD module in a project |
 | `validate` | Validate Dagger functions against contract |
 | `ci` | Build and test (optionally deliver artifacts) |
 | `deliver` | Publish container images and Helm charts |
@@ -137,6 +158,23 @@ Your project must have:
 Example implementations provided in `cicd_dagger_contract/` directory.
 
 ## Common Workflows
+
+### New Project Setup
+
+```bash
+# 1. Create or navigate to project
+mkdir ~/dev/my-app && cd ~/dev/my-app
+
+# 2. Initialize Dagger CI/CD module
+cicd-local init python my-app
+
+# 3. Customize the generated functions in cicd/
+# 4. Validate implementation
+cicd-local validate
+
+# 5. Test the pipeline
+cicd-local ci
+```
 
 ### Local Development
 

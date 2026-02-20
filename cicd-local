@@ -9,6 +9,7 @@ show_usage() {
 Usage: cicd-local <command> [OPTIONS]
 
 Available Commands:
+  init        Initialize Dagger CI/CD module in a project
   validate    Validate Dagger contract compliance
   ci          Build and test code changes
   deliver     Build and publish artifacts to repositories
@@ -20,6 +21,28 @@ Options vary by command. Use --help with any command for details:
   cicd-local <command> --help
 
 Command Details:
+
+INIT (init)
+  Initialize a Dagger CI/CD module in your project with example implementations.
+
+  Usage:
+    cicd-local init <language> [name]
+
+  Arguments:
+    language    Programming language (go, python, java, typescript)
+    name        Optional module name (defaults to project directory name)
+
+  Examples:
+    cicd-local init go                  # Initialize with Go, use dir name
+    cicd-local init python my-app       # Initialize with Python, custom name
+    cicd-local init java my-service     # Initialize with Java
+    cicd-local init typescript          # Initialize with TypeScript
+
+  What it does:
+    - Creates cicd/ directory in current project
+    - Initializes Dagger module with specified SDK
+    - Copies example implementations
+    - Creates VERSION file (if needed)
 
 VALIDATE (validate)
   Validates that a project's Dagger functions conform to the cicd-local contract.
@@ -130,6 +153,11 @@ while [ -L "$SCRIPT_PATH" ]; do
 done
 SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_PATH")" && pwd)"
 
+# Handle init command
+if [ "$COMMAND" = "init" ]; then
+    exec "$SCRIPT_DIR/init.sh" "${@:2}"
+fi
+
 # Handle validate command separately
 if [ "$COMMAND" = "validate" ]; then
     PROJECT_DIR="${2:-$(pwd)}"
@@ -141,7 +169,7 @@ PIPELINE_SCRIPT="$SCRIPT_DIR/local_${COMMAND}_pipeline.sh"
 
 if [ ! -f "$PIPELINE_SCRIPT" ]; then
     echo "Error: Command '$COMMAND' not found"
-    echo "Available commands: validate, ci, iat, staging, deliver, deploy"
+    echo "Available commands: init, validate, ci, iat, staging, deliver, deploy"
     exit 1
 fi
 

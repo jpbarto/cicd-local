@@ -6,7 +6,9 @@ Complete guide for using cicd-local pipelines to build, test, and deploy your ap
 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Getting Started](#getting-started)
 - [Pipeline Commands](#pipeline-commands)
+  - [init](#init---initialize-project)
   - [validate](#validate---contract-validation)
   - [ci](#ci---continuous-integration)
   - [deliver](#deliver---artifact-publishing)
@@ -70,7 +72,84 @@ ln -s ~/projects/cicd-local/cicd-local ~/bin/cicd-local
 cicd-local --help
 ```
 
+## Getting Started
+
+The fastest way to get started with cicd-local is using the `init` command to scaffold a new Dagger module:
+
+```bash
+# Navigate to your project directory
+cd ~/dev/my-project
+
+# Initialize Dagger CI/CD module (automatically uses project directory name)
+cicd-local init python
+
+# Or specify a custom module name
+cicd-local init go my-custom-name
+```
+
+This creates:
+- `cicd/` directory with Dagger module
+- Example implementations for all contract functions
+- `VERSION` file (if not present)
+- Language-specific boilerplate
+
+After initialization, customize the generated functions to match your project's needs.
+
 ## Pipeline Commands
+
+### init - Initialize Project
+
+Initializes a Dagger CI/CD module in your project with example implementations.
+
+**Usage:**
+```bash
+# Initialize with language (uses project directory name as module name)
+cicd-local init <language>
+
+# Initialize with custom module name
+cicd-local init <language> <name>
+
+# Examples
+cicd-local init go
+cicd-local init python my-app
+cicd-local init java my-service
+cicd-local init typescript
+```
+
+**Supported Languages:**
+- `go` or `golang` - Go/Golang
+- `python` or `py` - Python
+- `java` - Java
+- `typescript` or `ts` - TypeScript
+
+**What it does:**
+1. Creates `cicd/` directory in current project
+2. Runs `dagger init --sdk=<language> --name=<name>`
+3. Copies example implementations from `cicd_dagger_contract/<language>/`
+4. Strips `.example` suffix from copied files
+5. Creates `VERSION` file with `0.1.0` if not present
+6. Preserves any existing generated Dagger files
+
+**Safety features:**
+- Backs up existing `cicd/` directory before reinitializing
+- Prompts for confirmation before overwriting
+- Skips copying files that already exist
+- Checks for Dagger CLI installation
+
+**Next steps after init:**
+```bash
+# 1. Review generated code
+ls -la cicd/
+
+# 2. Customize the functions
+# Edit the files in cicd/ to match your project
+
+# 3. Validate your implementation
+cicd-local validate
+
+# 4. Test locally
+cicd-local ci
+```
 
 ### validate - Contract Validation
 

@@ -37,7 +37,7 @@ class Test:
     async def integration_test(
         self,
         source: dagger.Directory,
-        kubeconfig: dagger.File,
+        kubeconfig: dagger.Secret,
         awsconfig: Optional[dagger.Secret] = None,
         deployment_context: Optional[dagger.File] = None,
         validation_context: Optional[dagger.File] = None,

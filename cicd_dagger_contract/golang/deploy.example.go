@@ -18,7 +18,7 @@ func (m *Goserv) Deploy(
 	source *dagger.Directory,
 	// +optional
 	// Kubernetes config file content
-	kubeconfig *dagger.File,
+	kubeconfig *dagger.Secret,
 	// +optional
 	// AWS configuration file content
 	awsconfig *dagger.Secret,

@@ -21,7 +21,7 @@ export class Deploy {
   @func()
   async deploy(
     source: Directory,
-    kubeconfig?: File,
+    kubeconfig?: Secret,
     awsconfig?: Secret,
     helmRepository: string = "oci://ttl.sh",
     containerRepository: string = "ttl.sh",

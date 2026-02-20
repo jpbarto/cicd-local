@@ -35,11 +35,11 @@ public class Test {
      * @param awsconfig AWS configuration file content
      * @param deploymentContext Deployment context from Deploy function
      * @param validationContext Validation context from Validate function
-     * @return Test output string
+     * @return String containing test results
      */
     public String integrationTest(
             Directory source,
-            File kubeconfig,
+            Secret kubeconfig,
             Secret awsconfig,
             File deploymentContext,
             File validationContext) throws Exception {

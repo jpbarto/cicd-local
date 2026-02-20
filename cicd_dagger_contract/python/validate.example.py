@@ -12,26 +12,32 @@ class Validate:
     @function
     async def validate(
         self,
-        kubeconfig: dagger.File,
-        deployment_context: dagger.File,
+        source: dagger.Directory,
+        kubeconfig: dagger.Secret,
         awsconfig: Optional[dagger.Secret] = None,
+        release_candidate: Optional[bool] = False,
+        deployment_context: Optional[dagger.File] = None,
     ) -> dagger.File:
         """Validate runs the validation script to verify that the deployment is healthy and functioning correctly
         
         Args:
+            source: Source directory containing the project
             kubeconfig: Kubernetes config file content
-            deployment_context: Deployment context from Deploy function
             awsconfig: AWS configuration file content
+            release_candidate: Build as release candidate (appends -rc to version tag)
+            deployment_context: Deployment context from Deploy function
         
         Returns:
             File containing validation context
         """
-        # Extract deployment information from context
-        context_content = await deployment_context.contents()
-        dep_context = json.loads(context_content)
-        
-        endpoint = dep_context.get("endpoint")
-        release_name = dep_context.get("releaseName")
+        # Extract deployment information from context if provided
+        endpoint = None
+        release_name = None
+        if deployment_context:
+            context_content = await deployment_context.contents()
+            dep_context = json.loads(context_content)
+            endpoint = dep_context.get("endpoint")
+            release_name = dep_context.get("releaseName")
 
         # Perform validation checks
         # ... validation logic here ...
