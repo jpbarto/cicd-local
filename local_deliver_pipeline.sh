@@ -176,7 +176,7 @@ fi
 ################################################################################
 
 if [ "$SKIP_BUILD" = false ]; then
-    print_step "Step 1: Build Multi-Architecture Container Image"
+    print_step "Step 1: Build repository artifacts"
     
     BUILD_CMD="dagger -m cicd call build --source=$SOURCE_DIR"
     
@@ -184,7 +184,7 @@ if [ "$SKIP_BUILD" = false ]; then
         BUILD_CMD="$BUILD_CMD --release-candidate=true"
     fi
     
-    BUILD_CMD="$BUILD_CMD export --path=./build/goserv-image.tar"
+    BUILD_CMD="$BUILD_CMD export --path=./output/build/buildArtifact"
     
     print_info "Running: $BUILD_CMD"
     echo ""
@@ -194,7 +194,7 @@ if [ "$SKIP_BUILD" = false ]; then
     
     if eval "$BUILD_CMD"; then
         print_success "Build completed successfully"
-        print_info "Multi-arch image exported to: ./build/goserv-image.tar"
+        print_info "Build artifact exported to: ./output/build/buildArtifact"
     else
         print_error "Build failed"
         exit 1
