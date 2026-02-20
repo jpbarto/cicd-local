@@ -156,7 +156,7 @@ get_golang_contract() {
         UnitTest) echo "ctx:context.Context,source:*dagger.Directory,buildArtifact:*dagger.File" ;;
         IntegrationTest) echo "ctx:context.Context,source:*dagger.Directory,targetUrl:string,deploymentContext:*dagger.File" ;;
         Deliver) echo "ctx:context.Context,source:*dagger.Directory,containerRepository:string,helmRepository:string,buildArtifact:*dagger.File,releaseCandidate:bool" ;;
-        Deploy) echo "ctx:context.Context,source:*dagger.Directory,awsconfig:*dagger.Secret,kubeconfig:*dagger.Secret,helmRepository:string,containerRepository:string,releaseCandidate:bool" ;;
+        Deploy) echo "ctx:context.Context,source:*dagger.Directory,awsconfig:*dagger.Secret,kubeconfig:*dagger.Secret,helmRepository:string,containerRepository:string,releaseCandidate:bool,deliveryContext:*dagger.File" ;;
         Validate) echo "ctx:context.Context,source:*dagger.Directory,kubeconfig:*dagger.Secret,releaseName:string,namespace:string,expectedVersion:string,releaseCandidate:bool,deploymentContext:*dagger.File" ;;
     esac
 }
@@ -242,8 +242,8 @@ validate_golang_function() {
     local expected_params="$2"
     local file_content="$3"
     
-    # Extract function signature
-    local func_signature=$(echo "$file_content" | grep -A 20 "func (m \*[A-Za-z]*) $func_name(" | head -20)
+    # Extract function signature (increased line capture to handle functions with many comments)
+    local func_signature=$(echo "$file_content" | grep -A 40 "func (m \*[A-Za-z]*) $func_name(" | head -40)
     
     if [ -z "$func_signature" ]; then
         print_error "Function '$func_name' not found in Go files"

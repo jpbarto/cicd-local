@@ -278,32 +278,12 @@ TEMP_KUBECONFIG=$(mktemp /tmp/kubeconfig.XXXXXX)
 # Register cleanup on exit
 trap "rm -f ${TEMP_KUBECONFIG}" EXIT
 
-# Get current context name
+# Get current context name for logging
 CURRENT_CONTEXT=$(kubectl config current-context)
 print_info "Current context: ${CURRENT_CONTEXT}"
 
-# Get the cluster, user, and namespace for the current context
-CLUSTER_NAME=$(kubectl config view -o jsonpath="{.contexts[?(@.name=='${CURRENT_CONTEXT}')].context.cluster}")
-USER_NAME=$(kubectl config view -o jsonpath="{.contexts[?(@.name=='${CURRENT_CONTEXT}')].context.user}")
-CONTEXT_NAMESPACE=$(kubectl config view -o jsonpath="{.contexts[?(@.name=='${CURRENT_CONTEXT}')].context.namespace}")
-
-print_info "Extracting context: ${CURRENT_CONTEXT}"
-print_info "  Cluster: ${CLUSTER_NAME}"
-print_info "  User: ${USER_NAME}"
-print_info "  Namespace: ${CONTEXT_NAMESPACE:-default}"
-
-# Extract and build minimal kubeconfig
-cat > "${TEMP_KUBECONFIG}" << EOF
-apiVersion: v1
-kind: Config
-current-context: ${CURRENT_CONTEXT}
-contexts:
-$(kubectl config view -o json | jq -r ".contexts[] | select(.name==\"${CURRENT_CONTEXT}\")" | sed 's/^/  /')
-clusters:
-$(kubectl config view --raw -o json | jq -r ".clusters[] | select(.name==\"${CLUSTER_NAME}\")" | sed 's/^/  /')
-users:
-$(kubectl config view --raw -o json | jq -r ".users[] | select(.name==\"${USER_NAME}\")" | sed 's/^/  /')
-EOF
+# Generate minimal kubeconfig with only the current context using kubectl
+kubectl config view --minify --raw > "${TEMP_KUBECONFIG}"
 
 # Validate the generated kubeconfig
 if kubectl --kubeconfig="${TEMP_KUBECONFIG}" cluster-info &> /dev/null; then
@@ -341,8 +321,8 @@ if command -v aws &> /dev/null; then
     fi
     
     # Get AWS credentials (use dummy values for LocalStack if not set)
-    AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-test}"
-    AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-test}"
+    AWS_ACCESS_KEY_ID="test"
+    AWS_SECRET_ACCESS_KEY="test"
     AWS_REGION="${AWS_REGION:-us-east-1}"
     
     # Create AWS config file compatible with LocalStack
@@ -380,19 +360,14 @@ mkdir -p ./output/deploy
 
 # Build Dagger Deploy command - export deployment context
 DEPLOY_CMD="dagger -m cicd call deploy --source=${SOURCE_DIR}"
-
-# Add AWS config if available
-if [ "$USE_AWS_CONFIG" = true ]; then
-    DEPLOY_CMD="${DEPLOY_CMD} --awsconfig=file:${TEMP_AWS_CONFIG}"
-fi
-
-DEPLOY_CMD="${DEPLOY_CMD} --kubeconfig=file:${TEMP_KUBECONFIG}"
+DEPLOY_CMD="${DEPLOY_CMD} --awsconfig=file://${TEMP_AWS_CONFIG}"
+DEPLOY_CMD="${DEPLOY_CMD} --kubeconfig=file://${TEMP_KUBECONFIG}"
 DEPLOY_CMD="${DEPLOY_CMD} --helm-repository=${HELM_REPOSITORY_URL}"
 DEPLOY_CMD="${DEPLOY_CMD} --container-repository=${CONTAINER_REPOSITORY_URL}"
 
 # Pass delivery context if available
 if [ -f "./output/deliver/deliveryContext" ]; then
-    DEPLOY_CMD="${DEPLOY_CMD} --delivery-context=file:./output/deliver/deliveryContext"
+    DEPLOY_CMD="${DEPLOY_CMD} --delivery-context=file://./output/deliver/deliveryContext"
 fi
 
 if [ "$RELEASE_CANDIDATE" = true ]; then
@@ -400,14 +375,14 @@ if [ "$RELEASE_CANDIDATE" = true ]; then
 fi
 
 # Export deployment context to file
-DEPLOY_CMD="${DEPLOY_CMD} export --path=./output/deploy/context.json"
+DEPLOY_CMD="${DEPLOY_CMD} export --path=output/deploy/deploymentContext"
 
 print_info "Running: ${DEPLOY_CMD}"
 echo ""
 
 if eval "$DEPLOY_CMD"; then
     print_success "Application deployed successfully"
-    print_info "Deployment context saved to: ./output/deploy/context.json"
+    print_info "Deployment context saved to: output/deploy/deploymentContext"
 else
     print_error "Deployment failed"
     exit 1
@@ -425,16 +400,16 @@ if [ "$SKIP_VALIDATION" = false ]; then
     
     # Build Dagger Validate command
     VALIDATE_CMD="dagger -m cicd call validate --source=${SOURCE_DIR}"
-    VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file:${TEMP_KUBECONFIG}"
+    VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file://${TEMP_KUBECONFIG}"
     
     # Add AWS config if available
     if [ "$USE_AWS_CONFIG" = true ]; then
-        VALIDATE_CMD="${VALIDATE_CMD} --awsconfig=file:${TEMP_AWS_CONFIG}"
+        VALIDATE_CMD="${VALIDATE_CMD} --awsconfig=file://${TEMP_AWS_CONFIG}"
     fi
     
     # Add deployment context if available
     if [ -f "./output/deploy/deploymentContext" ]; then
-        VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file:./output/deploy/deploymentContext"
+        VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file://./output/deploy/deploymentContext"
     fi
     
     if [ "$RELEASE_CANDIDATE" = true ]; then

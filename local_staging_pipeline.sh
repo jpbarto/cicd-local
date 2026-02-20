@@ -138,13 +138,13 @@ deploy_and_validate() {
     
     # Build Dagger Deploy command - export deployment context
     DEPLOY_CMD="dagger -m cicd call deploy --source=${SOURCE_DIR}"
-    DEPLOY_CMD="${DEPLOY_CMD} --kubeconfig=file:${HOME}/.kube/config"
+    DEPLOY_CMD="${DEPLOY_CMD} --kubeconfig=file://${TEMP_KUBECONFIG}"
     DEPLOY_CMD="${DEPLOY_CMD} --helm-repository=${HELM_REPOSITORY_URL}"
     DEPLOY_CMD="${DEPLOY_CMD} --container-repository=${CONTAINER_REPOSITORY_URL}"
     
     # Pass delivery context if available
     if [ -f "./output/deliver/deliveryContext" ]; then
-        DEPLOY_CMD="${DEPLOY_CMD} --delivery-context=file:./output/deliver/deliveryContext"
+        DEPLOY_CMD="${DEPLOY_CMD} --delivery-context=file://./output/deliver/deliveryContext"
     fi
     
     if [ "$is_release_candidate" = "true" ]; then
@@ -183,11 +183,11 @@ deploy_and_validate() {
     mkdir -p ./output/validate
     
     VALIDATE_CMD="dagger -m cicd call validate --source=${SOURCE_DIR}"
-    VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file:${HOME}/.kube/config"
+    VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file://${TEMP_KUBECONFIG}"
     
     # Add deployment context if available
     if [ -f "./output/deploy/deploymentContext" ]; then
-        VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file:./output/deploy/deploymentContext"
+        VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file://./output/deploy/deploymentContext"
     fi
     
     if [ "$is_release_candidate" = "true" ]; then
@@ -322,6 +322,34 @@ if kubectl cluster-info &> /dev/null; then
     print_success "Successfully connected to Kubernetes cluster"
 else
     print_error "Failed to connect to Kubernetes cluster"
+    exit 1
+fi
+
+################################################################################
+# Step 2.5: Create Minimal Kubeconfig for Current Context
+################################################################################
+
+print_step "Step 2.5: Create Minimal Kubeconfig"
+
+# Create a temporary kubeconfig file with only the current context
+TEMP_KUBECONFIG=$(mktemp /tmp/kubeconfig.XXXXXX)
+
+# Register cleanup on exit
+trap "rm -f ${TEMP_KUBECONFIG}" EXIT
+
+# Get current context name for logging
+CURRENT_CONTEXT=$(kubectl config current-context)
+print_info "Current context: ${CURRENT_CONTEXT}"
+
+# Generate minimal kubeconfig with only the current context using kubectl
+kubectl config view --minify --raw > "${TEMP_KUBECONFIG}"
+
+# Validate the generated kubeconfig
+if kubectl --kubeconfig="${TEMP_KUBECONFIG}" cluster-info &> /dev/null; then
+    print_success "Minimal kubeconfig created successfully: ${TEMP_KUBECONFIG}"
+else
+    print_error "Generated kubeconfig is invalid"
+    cat "${TEMP_KUBECONFIG}"
     exit 1
 fi
 
