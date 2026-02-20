@@ -21,7 +21,6 @@ public class Deploy {
      * @param awsconfig AWS configuration file content
      * @param helmRepository Helm chart repository URL (default: oci://ttl.sh)
      * @param containerRepository Container repository URL (default: ttl.sh)
-     * @param deliveryContext Delivery context from Deliver function
      * @param releaseCandidate Build as release candidate (appends -rc to version tag)
      * @return File containing deployment context
      */
@@ -31,19 +30,7 @@ public class Deploy {
             Secret awsconfig,
             String helmRepository,
             String containerRepository,
-            File deliveryContext,
             boolean releaseCandidate) throws Exception {
-        // Extract info from delivery context if provided
-        String imageRef = null;
-        String chartRef = null;
-        if (deliveryContext != null) {
-            ObjectMapper mapper = new ObjectMapper();
-            String contextContent = deliveryContext.contents();
-            JsonNode delContext = mapper.readTree(contextContent);
-            imageRef = delContext.get("imageReference").asText();
-            chartRef = delContext.get("chartReference").asText();
-        }
-
         // Perform deployment (helm install/upgrade)
         // ... deployment logic here ...
 

@@ -17,7 +17,6 @@ class Deploy:
         awsconfig: Optional[dagger.Secret] = None,
         helm_repository: Optional[str] = "oci://ttl.sh",
         container_repository: Optional[str] = "ttl.sh",
-        delivery_context: Optional[dagger.File] = None,
         release_candidate: Optional[bool] = False,
     ) -> dagger.File:
         """Deploy installs the Helm chart from a Helm repository to a Kubernetes cluster
@@ -30,21 +29,11 @@ class Deploy:
             awsconfig: AWS configuration file content
             helm_repository: Helm chart repository URL (default: oci://ttl.sh)
             container_repository: Container repository URL (default: ttl.sh)
-            delivery_context: Delivery context from Deliver function
             release_candidate: Build as release candidate (appends -rc to version tag)
         
         Returns:
             File containing deployment context
         """
-        # Extract info from delivery context if provided
-        image_ref = None
-        chart_ref = None
-        if delivery_context:
-            context_content = await delivery_context.contents()
-            del_context = json.loads(context_content)
-            image_ref = del_context.get("imageReference")
-            chart_ref = del_context.get("chartReference")
-
         # Perform deployment (helm install/upgrade)
         # ... deployment logic here ...
 

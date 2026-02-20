@@ -15,7 +15,6 @@ export class Deploy {
    * @param awsconfig AWS configuration file content
    * @param helmRepository Helm chart repository URL (default: oci://ttl.sh)
    * @param containerRepository Container repository URL (default: ttl.sh)
-   * @param deliveryContext Delivery context from Deliver function
    * @param releaseCandidate Build as release candidate (appends -rc to version tag)
    * @returns File containing deployment context
    */
@@ -26,19 +25,8 @@ export class Deploy {
     awsconfig?: Secret,
     helmRepository: string = "oci://ttl.sh",
     containerRepository: string = "ttl.sh",
-    deliveryContext?: File,
     releaseCandidate: boolean = false
   ): Promise<File> {
-    // Extract info from delivery context if provided
-    let imageRef: string | undefined
-    let chartRef: string | undefined
-    if (deliveryContext) {
-      const contextContent = await deliveryContext.contents()
-      const delContext = JSON.parse(contextContent)
-      imageRef = delContext.imageReference
-      chartRef = delContext.chartReference
-    }
-
     // Perform deployment (helm install/upgrade)
     // ... deployment logic here ...
 

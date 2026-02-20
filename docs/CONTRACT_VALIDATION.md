@@ -273,7 +273,6 @@ func (m *YourModule) Deploy(
     helmRepository string,
     containerRepository string,
     releaseCandidate bool,
-    deliveryContext *dagger.File,
 ) (*dagger.File, error)
 ```
 
@@ -288,7 +287,6 @@ async def deploy(
     helm_repository: str = "oci://ttl.sh",
     container_repository: str = "ttl.sh",
     release_candidate: bool = False,
-    delivery_context: Optional[dagger.File] = None,
 ) -> dagger.File:
 ```
 
@@ -300,8 +298,7 @@ public File deploy(
     Secret kubeconfig,
     String helmRepository,
     String containerRepository,
-    boolean releaseCandidate,
-    File deliveryContext
+    boolean releaseCandidate
 ) throws Exception
 ```
 
@@ -314,8 +311,7 @@ async deploy(
     kubeconfig?: Secret,
     helmRepository: string = "oci://ttl.sh",
     containerRepository: string = "ttl.sh",
-    releaseCandidate: boolean = false,
-    deliveryContext?: File
+    releaseCandidate: boolean = false
 ): Promise<File>
 ```
 

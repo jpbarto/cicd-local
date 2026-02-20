@@ -142,11 +142,6 @@ deploy_and_validate() {
     DEPLOY_CMD="${DEPLOY_CMD} --helm-repository=${HELM_REPOSITORY_URL}"
     DEPLOY_CMD="${DEPLOY_CMD} --container-repository=${CONTAINER_REPOSITORY_URL}"
     
-    # Pass delivery context if available
-    if [ -f "./output/deliver/deliveryContext" ]; then
-        DEPLOY_CMD="${DEPLOY_CMD} --delivery-context=file://./output/deliver/deliveryContext"
-    fi
-    
     if [ "$is_release_candidate" = "true" ]; then
         DEPLOY_CMD="${DEPLOY_CMD} --release-candidate=true"
     fi

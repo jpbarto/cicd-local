@@ -156,7 +156,7 @@ get_golang_contract() {
         UnitTest) echo "ctx:context.Context,source:*dagger.Directory,buildArtifact:*dagger.File" ;;
         IntegrationTest) echo "ctx:context.Context,source:*dagger.Directory,targetUrl:string,deploymentContext:*dagger.File" ;;
         Deliver) echo "ctx:context.Context,source:*dagger.Directory,containerRepository:string,helmRepository:string,buildArtifact:*dagger.File,releaseCandidate:bool" ;;
-        Deploy) echo "ctx:context.Context,source:*dagger.Directory,awsconfig:*dagger.Secret,kubeconfig:*dagger.Secret,helmRepository:string,containerRepository:string,releaseCandidate:bool,deliveryContext:*dagger.File" ;;
+        Deploy) echo "ctx:context.Context,source:*dagger.Directory,awsconfig:*dagger.Secret,kubeconfig:*dagger.Secret,helmRepository:string,containerRepository:string,releaseCandidate:bool" ;;
         Validate) echo "ctx:context.Context,source:*dagger.Directory,kubeconfig:*dagger.Secret,releaseName:string,namespace:string,expectedVersion:string,releaseCandidate:bool,deploymentContext:*dagger.File" ;;
     esac
 }

@@ -34,7 +34,6 @@ The cicd-local contract uses context files to pass information between pipeline 
 
 ### Deploy Function
 - **Returns**: `File` containing deployment context
-- **New Parameter**: `deliveryContext` (optional) - File from Deliver function
 - **Suggested Contents**: Endpoint URL, release name, namespace, versions
 
 ### Validate Function
@@ -143,7 +142,7 @@ Build → Deliver → Deploy → Validate → IntegrationTest
 **Context passing:**
 1. **Build** → exports buildArtifact (File)
 2. **Deliver** → receives buildArtifact → exports deliveryContext (File)
-3. **Deploy** → receives deliveryContext → exports deploymentContext (File)
+3. **Deploy** → exports deploymentContext (File)
 4. **Validate** → receives deploymentContext → exports validationContext (File)
 5. **IntegrationTest** → receives deploymentContext + validationContext
 
@@ -197,7 +196,6 @@ func (m *MyApp) Deploy(
     helmRepository string,
     containerRepository string,
     releaseCandidate bool,
-    deliveryContext *dagger.File,
 ) (*dagger.File, error) {
     // Perform deployment...
     namespace := "production"
@@ -236,8 +234,6 @@ async def deploy(
     helm_repository: str = "oci://ttl.sh",
     container_repository: str = "ttl.sh",
     release_candidate: bool = False,
-    delivery_context: Optional[dagger.File] = None,
-) -> dagger.File:
 ) -> dagger.File:
     # Perform deployment...
     namespace = "production"
@@ -429,8 +425,8 @@ The pipeline scripts automatically handle context file flow:
 **Context Flow in Pipelines:**
 ```
 Build → Deliver (creates deliveryContext)
-          ↓
-       Deploy (uses deliveryContext, creates deploymentContext)
+
+       Deploy (creates deploymentContext)
           ↓
       Validate (uses deploymentContext, creates validationContext)
           ↓
@@ -466,15 +462,14 @@ dagger -m cicd call deliver \
     export --path=./output/deliver/deliveryContext
 ```
 
-2. **Deploy with Delivery Context:**
+2. **Deploy with Kubeconfig:**
 ```bash
 # Deploy and capture deployment context
 dagger -m cicd call deploy \
     --source=. \
-    --kubeconfig=file:~/.kube/config \
+    --kubeconfig=file://~/.kube/config \
     --helm-repository=oci://ttl.sh \
     --container-repository=ttl.sh \
-    --delivery-context=file:./output/deliver/deliveryContext \
     export --path=./output/deploy/deploymentContext
 ```
 

@@ -309,7 +309,6 @@ func (m *Goserv) Deploy(
     helmRepository string,
     containerRepository string,
     releaseCandidate bool,
-    deliveryContext *dagger.File,
 ) (*dagger.File, error)
 ```
 
@@ -324,7 +323,6 @@ func (m *Goserv) Deploy(
 - `helmRepository string` - (Optional, default: `oci://ttl.sh`) Helm chart repository URL
 - `containerRepository string` - (Optional, default: `ttl.sh`) Container repository URL for pulling images
 - `releaseCandidate bool` - (Optional) Whether to deploy release candidate version
-- `deliveryContext *dagger.File` - (Optional) Delivery context from Deliver function with artifact details
 
 **Return Values**:
 - `*dagger.File` - Deployment context file containing deployment metadata (JSON format with endpoint, namespace, release name, version)

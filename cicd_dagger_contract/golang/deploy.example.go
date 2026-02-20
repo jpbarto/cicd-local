@@ -29,22 +29,9 @@ func (m *Goserv) Deploy(
 	// Container repository URL (default: ttl.sh)
 	containerRepository string,
 	// +optional
-	// Delivery context from Deliver function
-	deliveryContext *dagger.File,
-	// +optional
 	// Build as release candidate (appends -rc to version tag)
 	releaseCandidate bool,
 ) (*dagger.File, error) {
-	// Extract info from delivery context if provided
-	var imageRef, chartRef string
-	if deliveryContext != nil {
-		contextContent, _ := deliveryContext.Contents(ctx)
-		var delContext map[string]interface{}
-		json.Unmarshal([]byte(contextContent), &delContext)
-		imageRef = delContext["imageReference"].(string)
-		chartRef = delContext["chartReference"].(string)
-	}
-
 	// Perform deployment (helm install/upgrade)
 	// ... deployment logic here ...
 

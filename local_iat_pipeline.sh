@@ -261,17 +261,12 @@ if [ "$SKIP_DEPLOY" = false ]; then
     DEPLOY_CMD="${DEPLOY_CMD} --helm-repository=${HELM_REPOSITORY_URL}"
     DEPLOY_CMD="${DEPLOY_CMD} --container-repository=${CONTAINER_REPOSITORY_URL}"
     
-    # Pass delivery context if available
-    if [ -f "./output/deliver/deliveryContext" ]; then
-        DEPLOY_CMD="${DEPLOY_CMD} --delivery-context=file://./output/deliver/deliveryContext"
-    fi
-    
     if [ "$RELEASE_CANDIDATE" = true ]; then
         DEPLOY_CMD="${DEPLOY_CMD} --release-candidate=true"
     fi
     
     # Export deployment context to file
-    DEPLOY_CMD="${DEPLOY_CMD} export --path=./output/deploy/context.json"
+    DEPLOY_CMD="${DEPLOY_CMD} export --path=./output/deploy/deploymentContext"
     
     print_info "Running: ${DEPLOY_CMD}"
     echo ""
