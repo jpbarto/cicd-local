@@ -192,7 +192,11 @@ if [ "$SKIP_BUILD" = false ]; then
     # Create build directory if it doesn't exist
     mkdir -p ./build
     
-    if eval "$BUILD_CMD"; then
+    LOG_FILE="./output/build/pipeline_deliver_build.log"
+    mkdir -p ./output/build
+    print_info "Logging output to: $LOG_FILE"
+    
+    if eval "$BUILD_CMD" 2>&1 | tee "$LOG_FILE"; then
         print_success "Build completed successfully"
         print_info "Build artifact exported to: ./output/build/buildArtifact"
     else
@@ -236,7 +240,10 @@ DELIVER_CMD="$DELIVER_CMD export --path=./output/deliver/deliveryContext"
 print_info "Running: $DELIVER_CMD"
 echo ""
 
-if eval "$DELIVER_CMD"; then
+LOG_FILE="./output/deliver/pipeline_deliver_deliver.log"
+print_info "Logging output to: $LOG_FILE"
+
+if eval "$DELIVER_CMD" 2>&1 | tee "$LOG_FILE"; then
     print_success "Artifacts delivered successfully"
     print_info "Delivery context saved to: ./output/deliver/deliveryContext"
 else

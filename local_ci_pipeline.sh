@@ -189,7 +189,10 @@ echo ""
 # Create build directory if it doesn't exist
 mkdir -p ./output/build
 
-if eval "$BUILD_CMD"; then
+LOG_FILE="./output/build/pipeline_ci_build.log"
+print_info "Logging output to: $LOG_FILE"
+
+if eval "$BUILD_CMD" 2>&1 | tee "$LOG_FILE"; then
     print_success "Build completed successfully"
     print_info "Build output exported to: ./output/build/buildArtifact"
 else
@@ -208,7 +211,10 @@ if [ "$SKIP_TESTS" = false ]; then
     print_info "Running: $TEST_CMD"
     echo ""
     
-    if eval "$TEST_CMD"; then
+    LOG_FILE="./output/build/pipeline_ci_unit-test.log"
+    print_info "Logging output to: $LOG_FILE"
+    
+    if eval "$TEST_CMD" 2>&1 | tee "$LOG_FILE"; then
         print_success "Unit tests passed"
     else
         print_error "Unit tests failed"
@@ -243,7 +249,10 @@ if [ "$PIPELINE_TRIGGER" = "pr-merge" ]; then
     print_info "Running: $DELIVER_CMD"
     echo ""
     
-    if eval "$DELIVER_CMD"; then
+    LOG_FILE="./output/deliver/pipeline_ci_deliver.log"
+    print_info "Logging output to: $LOG_FILE"
+    
+    if eval "$DELIVER_CMD" 2>&1 | tee "$LOG_FILE"; then
         print_success "Artifacts delivered successfully"
         print_info "Delivery context saved to: ./output/deliver/deliveryContext"
     else

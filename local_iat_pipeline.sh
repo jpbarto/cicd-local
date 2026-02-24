@@ -271,7 +271,10 @@ if [ "$SKIP_DEPLOY" = false ]; then
     print_info "Running: ${DEPLOY_CMD}"
     echo ""
     
-    if eval "$DEPLOY_CMD"; then
+    LOG_FILE="./output/deploy/pipeline_iat_deploy.log"
+    print_info "Logging output to: $LOG_FILE"
+    
+    if eval "$DEPLOY_CMD" 2>&1 | tee "$LOG_FILE"; then
         print_success "Application deployed successfully"
         print_info "Deployment context saved to: ./output/deploy/context.json"
     else
@@ -310,7 +313,10 @@ VALIDATE_CMD="${VALIDATE_CMD} export --path=./output/validate/validationContext"
 print_info "Running: ${VALIDATE_CMD}"
 echo ""
 
-if eval "$VALIDATE_CMD"; then
+LOG_FILE="./output/validate/pipeline_iat_validate.log"
+print_info "Logging output to: $LOG_FILE"
+
+if eval "$VALIDATE_CMD" 2>&1 | tee "$LOG_FILE"; then
     print_success "Deployment validation passed"
     print_info "Validation context saved to: ./output/validate/validationContext"
 else
@@ -341,7 +347,10 @@ fi
 print_info "Running: ${TEST_CMD}"
 echo ""
 
-if eval "$TEST_CMD"; then
+LOG_FILE="./output/validate/pipeline_iat_integration-test.log"
+print_info "Logging output to: $LOG_FILE"
+
+if eval "$TEST_CMD" 2>&1 | tee "$LOG_FILE"; then
     print_success "Integration tests passed"
     TEST_RESULT=0
 else

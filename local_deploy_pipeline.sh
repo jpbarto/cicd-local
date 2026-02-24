@@ -375,7 +375,10 @@ DEPLOY_CMD="${DEPLOY_CMD} export --path=output/deploy/deploymentContext"
 print_info "Running: ${DEPLOY_CMD}"
 echo ""
 
-if eval "$DEPLOY_CMD"; then
+LOG_FILE="./output/deploy/pipeline_deploy_deploy.log"
+print_info "Logging output to: $LOG_FILE"
+
+if eval "$DEPLOY_CMD" 2>&1 | tee "$LOG_FILE"; then
     print_success "Application deployed successfully"
     print_info "Deployment context saved to: output/deploy/deploymentContext"
 else
@@ -417,7 +420,10 @@ if [ "$SKIP_VALIDATION" = false ]; then
     print_info "Running: ${VALIDATE_CMD}"
     echo ""
     
-    if eval "$VALIDATE_CMD"; then
+    LOG_FILE="./output/validate/pipeline_deploy_validate.log"
+    print_info "Logging output to: $LOG_FILE"
+    
+    if eval "$VALIDATE_CMD" 2>&1 | tee "$LOG_FILE"; then
         print_success "Deployment validation passed"
         print_info "Validation context saved to: ./output/validate/validationContext"
     else

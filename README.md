@@ -231,6 +231,26 @@ RELEASE_NAME="goserv"
 NAMESPACE="goserv"
 ```
 
+## Pipeline Outputs
+
+All pipeline executions generate outputs in the `output/` directory:
+
+### Artifacts
+- `output/build/buildArtifact` - Built container image (OCI tarball)
+- `output/deliver/deliveryContext` - Published artifact metadata (from Deliver)
+- `output/deploy/deploymentContext` - Deployment metadata (from Deploy)
+- `output/validate/validationContext` - Validation results (from Validate)
+
+### Stage Logs
+Each Dagger function execution is logged:
+- `output/build/pipeline_{pipeline}_build.log`
+- `output/deliver/pipeline_{pipeline}_deliver.log`
+- `output/deploy/pipeline_{pipeline}_deploy.log`
+- `output/validate/pipeline_{pipeline}_validate.log`
+- `output/validate/pipeline_iat_integration-test.log`
+
+Log files capture complete console output including errors, making debugging easier.
+
 ## Documentation
 
 - **[USER_GUIDE.md](docs/USER_GUIDE.md)** - Complete usage guide with all commands, options, and workflows

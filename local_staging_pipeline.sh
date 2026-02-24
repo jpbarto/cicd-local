@@ -152,7 +152,10 @@ deploy_and_validate() {
     print_info "Running: ${DEPLOY_CMD}"
     echo ""
     
-    if eval "$DEPLOY_CMD"; then
+    LOG_FILE="./output/deploy/pipeline_staging_deploy.log"
+    print_info "Logging output to: $LOG_FILE"
+    
+    if eval "$DEPLOY_CMD" 2>&1 | tee "$LOG_FILE"; then
         print_success "Deployment completed"
         print_info "Deployment context saved to: ./output/deploy/deploymentContext"
     else
@@ -195,7 +198,10 @@ deploy_and_validate() {
     print_info "Running: ${VALIDATE_CMD}"
     echo ""
     
-    if eval "$VALIDATE_CMD"; then
+    LOG_FILE="./output/validate/pipeline_staging_validate.log"
+    print_info "Logging output to: $LOG_FILE"
+    
+    if eval "$VALIDATE_CMD" 2>&1 | tee "$LOG_FILE"; then
         print_success "Validation passed for $version_label"
         print_info "Validation context saved to: ./output/validate/validationContext"
     else

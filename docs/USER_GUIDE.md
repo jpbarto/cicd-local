@@ -207,8 +207,10 @@ cicd-local ci \
 - **Commit**: `Build → UnitTest`
 - **PR merge**: `Build → UnitTest → Deliver`
 
-**Artifacts:**
-- Container image OCI tarball: `./build/<appname>-image.tar`
+**Outputs:**
+- Build artifact: `./output/build/buildArtifact`
+- Delivery context: `./output/deliver/deliveryContext` (pr-merge only)
+- Stage logs: `./output/build/pipeline_ci_*.log`, `./output/deliver/pipeline_ci_deliver.log`
 
 ### deliver - Artifact Publishing
 
@@ -239,6 +241,11 @@ cicd-local deliver \
 - `--help, -h` - Show help message
 
 **Pipeline flow:** `Build → Deliver`
+
+**Outputs:**
+- Build artifact: `./output/build/buildArtifact`
+- Delivery context: `./output/deliver/deliveryContext`
+- Stage logs: `./output/build/pipeline_deliver_build.log`, `./output/deliver/pipeline_deliver_deliver.log`
 
 **Published artifacts:**
 - Multi-architecture container images
@@ -434,6 +441,73 @@ Your project must have:
 3. **Conform to contract**: Run `cicd-local validate` to check compliance
 
 See [CONTRACT_REFERENCE.md](CONTRACT_REFERENCE.md) for complete contract specification.
+
+## Pipeline Outputs
+
+All pipeline executions create organized outputs in your project's `output/` directory:
+
+### Directory Structure
+
+```
+output/
+├── build/
+│   ├── buildArtifact                      # Built container image (OCI tarball)
+│   ├── pipeline_ci_build.log              # CI pipeline build logs
+│   ├── pipeline_ci_unit-test.log          # CI pipeline test logs
+│   └── pipeline_deliver_build.log         # Deliver pipeline build logs
+├── deliver/
+│   ├── deliveryContext                    # Published artifact metadata
+│   ├── pipeline_ci_deliver.log            # CI pipeline deliver logs
+│   └── pipeline_deliver_deliver.log       # Deliver pipeline logs
+├── deploy/
+│   ├── deploymentContext                  # Deployment metadata
+│   ├── pipeline_deploy_deploy.log         # Deploy pipeline logs
+│   ├── pipeline_iat_deploy.log            # IAT pipeline deploy logs
+│   └── pipeline_staging_deploy.log        # Staging pipeline deploy logs
+└── validate/
+    ├── validationContext                  # Validation results
+    ├── pipeline_deploy_validate.log       # Deploy pipeline validation logs
+    ├── pipeline_iat_validate.log          # IAT pipeline validation logs
+    ├── pipeline_iat_integration-test.log  # Integration test logs
+    └── pipeline_staging_validate.log      # Staging pipeline validation logs
+```
+
+### Artifacts
+
+**Context Files** - JSON files containing metadata passed between pipeline stages:
+- `deliveryContext` - Published artifact references, versions, repository URLs
+- `deploymentContext` - Deployment endpoint, release name, namespace, versions
+- `validationContext` - Health check results, validation status
+
+See [CONTEXT_FILES.md](CONTEXT_FILES.md) for detailed format specifications.
+
+**Build Artifacts:**
+- `buildArtifact` - Multi-architecture container image in OCI tarball format
+
+### Stage Logs
+
+Every Dagger function execution captures complete console output to stage-specific log files:
+
+**Log File Naming:** `pipeline_{pipeline-name}_{stage-name}.log`
+
+**Examples:**
+- `pipeline_ci_build.log` - Build stage from CI pipeline
+- `pipeline_iat_validate.log` - Validate stage from IAT pipeline
+- `pipeline_staging_deploy.log` - Deploy stage from Staging pipeline
+
+**What's Logged:**
+- Complete stdout and stderr from Dagger execution
+- Build output, test results, deployment progress
+- Error messages and stack traces
+- Timestamps and execution details
+
+**Benefits:**
+- Debug failures without re-running pipelines
+- Compare outputs across pipeline runs
+- Share logs with team members
+- Audit pipeline execution history
+
+**Tip:** Use `tail -f output/build/pipeline_ci_build.log` to monitor pipeline execution in real-time from another terminal.
 
 ## Troubleshooting
 
