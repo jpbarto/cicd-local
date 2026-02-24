@@ -237,6 +237,25 @@ for example_file in "${EXAMPLES_SOURCE}"/*.example.*; do
     fi
 done
 
+# Copy privileged functions
+print_section "Copying Privileged Functions"
+
+PRIVILEGED_SOURCE="${SCRIPT_DIR}/privileged"
+PRIVILEGED_TARGET="${CICD_DIR}/privileged"
+
+if [ -d "${PRIVILEGED_SOURCE}" ]; then
+    if [ -d "${PRIVILEGED_TARGET}" ]; then
+        print_warning "Privileged directory already exists, skipping copy"
+    else
+        mkdir -p "${PRIVILEGED_TARGET}"
+        cp -r "${PRIVILEGED_SOURCE}"/*.go "${PRIVILEGED_TARGET}/"
+        print_success "Copied privileged functions to ${PRIVILEGED_TARGET}"
+        print_info "Privileged functions are available for import during development"
+    fi
+else
+    print_warning "Privileged functions directory not found: ${PRIVILEGED_SOURCE}"
+fi
+
 # Return to project directory
 cd "${PROJECT_DIR}"
 

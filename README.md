@@ -231,6 +231,85 @@ RELEASE_NAME="goserv"
 NAMESPACE="goserv"
 ```
 
+## Privileged Functions
+
+`cicd-local` provides reusable privileged functions for infrastructure deployment operations. These functions are **automatically copied** to your project during initialization and available for use in your Dagger code.
+
+### Available Functions
+
+- **Kubernetes Operations** - Apply manifests, get resources, port forwarding with kubectl
+- **Helm Operations** - Install and upgrade Helm releases
+- **Terraform Operations** - Plan and apply infrastructure changes
+- **Secret Management** - Load kubeconfig and secrets from secure storage
+
+### Automatic Setup
+
+Privileged functions are:
+1. ✅ **Copied during init** - Available immediately in `cicd/privileged/` for development
+2. 🔄 **Auto-injected at runtime** - Updated before pipeline execution if needed
+3. 📦 **Ready to import** - No import errors in your IDE during development
+
+### Usage in Your Code
+
+Import and use privileged functions in your Dagger code:
+
+```go
+import "github.com/your-org/your-project/cicd/privileged"
+
+func (m *Cicd) Deploy(ctx context.Context, source *dagger.Directory) (string, error) {
+    client, _ := dagger.Connect(ctx)
+    defer client.Close()
+    
+    // Load kubeconfig
+    kubeconfig, _ := privileged.LoadKubeconfig(ctx, client, "")
+    
+    // Apply Kubernetes manifests
+    output, err := privileged.KubectlApply(
+        ctx, client, 
+        source.Directory("k8s"),
+        "production",
+        kubeconfig,
+    )
+    return output, err
+}
+```
+
+### Environment Variables
+
+Configure operations using environment variables:
+
+```bash
+# Kubernetes/Helm operations
+export KUBECONFIG="~/.kube/config"      # Path to kubeconfig
+export KUBECTL_CONTEXT="prod-cluster"   # Kubernetes context
+export HELM_TIMEOUT="10m"               # Helm operation timeout
+
+# Terraform/AWS operations
+export AWS_ACCESS_KEY_ID="..."
+export AWS_SECRET_ACCESS_KEY="..."
+export AWS_REGION="us-east-1"
+export TF_VAR_environment="production"  # Terraform variables
+
+# Keep privileged functions for debugging (optional)
+export CICD_LOCAL_KEEP_PRIVILEGED=true
+```
+
+### Secret Storage
+
+Store sensitive values in `~/.cicd-local/secrets/`:
+
+```bash
+# Create secret file
+mkdir -p ~/.cicd-local/secrets
+echo "my-secret-value" > ~/.cicd-local/secrets/api-token
+chmod 600 ~/.cicd-local/secrets/api-token
+
+# Load in Dagger code
+token, err := privileged.LoadSecretFile("api-token")
+```
+
+See `privileged/README.md` for complete documentation and examples.
+
 ## Pipeline Outputs
 
 All pipeline executions generate outputs in the `output/` directory:

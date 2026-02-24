@@ -419,7 +419,126 @@ HELM_REPOSITORY_URL="oci://ttl.sh"
 COLIMA_PROFILE="acme-local"
 RELEASE_NAME="goserv"
 NAMESPACE="goserv"
+
+# Privileged functions (optional)
+CICD_LOCAL_KEEP_PRIVILEGED=false  # Set to true to keep privileged functions after pipeline execution
 ```
+
+### Authentication and Secrets
+
+#### Container Registry Credentials
+
+For authenticated registry access, set environment variables:
+
+```bash
+export CONTAINER_REGISTRY="ghcr.io"
+export CONTAINER_REGISTRY_USER="username"
+export CONTAINER_REGISTRY_PASSWORD="ghp_your_token"
+```
+
+#### AWS Credentials
+
+For AWS operations:
+
+```bash
+export AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+export AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+export AWS_SESSION_TOKEN="..."  # Optional
+```
+
+#### Secret Files
+
+Store sensitive values in `~/.cicd-local/secrets/`:
+
+```bash
+mkdir -p ~/.cicd-local/secrets
+echo "my-secret-value" > ~/.cicd-local/secrets/api-token
+chmod 600 ~/.cicd-local/secrets/api-token
+```
+
+### Privileged Functions
+
+`cicd-local` provides privileged functions for infrastructure deployment operations. These are reusable functions for Kubernetes, Helm, Terraform, and secret management.
+
+#### Automatic Setup
+
+Privileged functions are:
+1. **Copied during init** - Added to `{project}/cicd/privileged/` when you run `cicd-local init`
+2. **Available immediately** - No import errors in your IDE during development
+3. **Updated at runtime** - Refreshed before each pipeline execution if needed
+4. **Optionally cleaned** - Can be removed after execution (set `CICD_LOCAL_KEEP_PRIVILEGED=false`)
+
+#### Using Privileged Functions
+
+Import in your Dagger code:
+
+```go
+import "github.com/your-org/your-project/cicd/privileged"
+
+func (m *Cicd) Deploy(ctx context.Context, source *dagger.Directory) (string, error) {
+    client, err := dagger.Connect(ctx)
+    if err != nil {
+        return "", err
+    }
+    defer client.Close()
+    
+    // Load kubeconfig
+    kubeconfig, err := privileged.LoadKubeconfig(ctx, client, "")
+    if err != nil {
+        return "", err
+    }
+    
+    // Apply Kubernetes manifests
+    output, err := privileged.KubectlApply(
+        ctx, client,
+        source.Directory("k8s"),
+        "production",
+        kubeconfig,
+    )
+    if err != nil {
+        return "", fmt.Errorf("kubectl apply failed: %w", err)
+    }
+    
+    return output, nil
+}
+```
+
+#### Available Functions
+
+**Kubernetes Operations:**
+- `KubectlApply(ctx, client, manifestsDir, namespace, kubeconfig)` - Apply manifests
+- `KubectlGet(ctx, client, namespace, resourceName, kubeconfig)` - Get resource as JSON
+- `KubectlPortForward(ctx, client, namespace, resourceName, ports, kubeconfig)` - Port forward service
+
+**Helm Operations:**
+- `HelmInstall(ctx, client, releaseName, chartPath, namespace, valuesFile, kubeconfig)` - Install/upgrade chart
+- `HelmUpgrade(ctx, client, releaseName, chartReference, namespace, kubeconfig)` - Upgrade release
+
+**Terraform Operations:**
+- `TerraformPlan(ctx, client, terraformDir, varFile)` - Run terraform plan
+- `TerraformApply(ctx, client, terraformDir, varFile, autoApprove)` - Apply infrastructure
+
+**Secret Management:**
+- `LoadKubeconfig(ctx, client, path)` - Load kubeconfig as Dagger secret
+- `LoadSecretFile(name)` - Load secret from `~/.cicd-local/secrets/{name}`
+- `LoadSecretAsDaggerSecret(client, name)` - Load secret as Dagger secret
+- `GetEnvOrSecret(envVar, secretName)` - Try env var first, fallback to secret file
+
+#### Debugging Privileged Functions
+
+To inspect or debug privileged functions:
+
+```bash
+# Keep functions after pipeline execution
+export CICD_LOCAL_KEEP_PRIVILEGED=true
+
+# Run pipeline
+cicd-local ci
+
+# Functions remain in project/cicd/privileged/ for inspection
+```
+
+See `privileged/README.md` in the cicd-local installation directory for complete documentation.
 
 ### Project Requirements
 

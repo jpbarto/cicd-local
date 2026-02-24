@@ -29,6 +29,9 @@ set -u  # Exit on undefined variable
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Load privileged functions management
+source "${SCRIPT_DIR}/manage_privileged.sh"
+
 # Load environment variables from local_cicd.env in the script's directory
 if [ -f "$SCRIPT_DIR/local_cicd.env" ]; then
     export $(grep -v '^#' "$SCRIPT_DIR/local_cicd.env" | xargs)
@@ -131,6 +134,21 @@ if [ -f "$SOURCE_DIR/VERSION" ]; then
 else
     print_error "VERSION file not found"
     exit 1
+fi
+
+################################################################################
+# Inject Privileged Functions
+################################################################################
+
+if has_privileged_functions; then
+    print_info "Injecting privileged functions..."
+    if inject_privileged_functions "$SOURCE_DIR"; then
+        print_success "Privileged functions injected"
+        # Set up cleanup trap
+        trap "cleanup_privileged_functions '$SOURCE_DIR'" EXIT
+    else
+        print_warning "Could not inject privileged functions (continuing anyway)"
+    fi
 fi
 
 ################################################################################
