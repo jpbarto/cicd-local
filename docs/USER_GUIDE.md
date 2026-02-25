@@ -89,9 +89,12 @@ cicd-local init go my-custom-name
 
 This creates:
 - `cicd/` directory with Dagger module
-- Example implementations for all contract functions
+- Example implementations customized for your project name
+- Privileged functions with placeholder secrets in `cicd/privileged/`
 - `VERSION` file (if not present)
 - Language-specific boilerplate
+
+**Note**: The example files are automatically customized by replacing legacy "Goserv" references with your actual project name. For example, if your project is named "MyApp", class names become `MyApp`, import paths become `dagger/myapp/internal/dagger`, and service endpoints become `myapp.default.svc.cluster.local`.
 
 After initialization, customize the generated functions to match your project's needs.
 
@@ -126,9 +129,15 @@ cicd-local init typescript
 1. Creates `cicd/` directory in current project
 2. Runs `dagger init --sdk=<language> --name=<name>`
 3. Copies example implementations from `cicd_dagger_contract/<language>/`
-4. Strips `.example` suffix from copied files
-5. Creates `VERSION` file with `0.1.0` if not present
-6. Preserves any existing generated Dagger files
+4. **Replaces "Goserv" references** with your project name in all example files:
+   - Class/type names: `Goserv` → `YourProjectName`
+   - Import paths: `dagger/goserv/` → `dagger/yourprojectname/`
+   - Service endpoints: `goserv.default.svc` → `yourprojectname.default.svc`
+   - Release names: `"goserv"` → `"yourprojectname"`
+5. Strips `.example` suffix from copied files
+6. Copies privileged functions with placeholder secrets to `cicd/privileged/`
+7. Creates `VERSION` file with `0.1.0` if not present
+8. Preserves any existing generated Dagger files
 
 **Safety features:**
 - Backs up existing `cicd/` directory before reinitializing
@@ -458,15 +467,25 @@ chmod 600 ~/.cicd-local/secrets/api-token
 
 ### Privileged Functions
 
-`cicd-local` provides privileged functions for infrastructure deployment operations. These are reusable functions for Kubernetes, Helm, Terraform, and secret management.
+`cicd-local` provides privileged functions for infrastructure deployment operations. These are reusable functions for Kubernetes, Helm, Terraform, and secret management that use **runtime secret injection** for security.
 
-#### Automatic Setup
+#### Security Model
 
-Privileged functions are:
-1. **Copied during init** - Added to `{project}/cicd/privileged/` when you run `cicd-local init`
-2. **Available immediately** - No import errors in your IDE during development
-3. **Updated at runtime** - Refreshed before each pipeline execution if needed
-4. **Optionally cleaned** - Can be removed after execution (set `CICD_LOCAL_KEEP_PRIVILEGED=false`)
+Privileged functions use a template-and-inject pattern:
+
+1. **Development Time**: `cicd-local init` copies functions with placeholder secrets (`__INJECTED_KUBECONFIG__`)
+2. **Runtime**: Before `dagger call`, credentials are injected from your environment:
+   - Kubeconfig from `~/.kube/config` or `$KUBECONFIG`
+   - Context from `$KUBECTL_CONTEXT`
+   - Helm timeout from `$HELM_TIMEOUT`
+3. **Execution**: User-defined Dagger code calls privileged functions (which have injected secrets)
+4. **Cleanup**: Privileged functions optionally removed after execution
+
+This ensures:
+- ✅ IDE has valid Go code during development (no import errors)
+- ✅ Secrets never stored in project repositories
+- ✅ User-defined Dagger code cannot access secrets directly
+- ✅ Credentials only exist during pipeline execution
 
 #### Using Privileged Functions
 
@@ -482,8 +501,8 @@ func (m *Cicd) Deploy(ctx context.Context, source *dagger.Directory) (string, er
     }
     defer client.Close()
     
-    // Load kubeconfig
-    kubeconfig, err := privileged.LoadKubeconfig(ctx, client, "")
+    // Load injected kubeconfig (no path needed)
+    kubeconfig, err := privileged.LoadKubeconfig(ctx, client)
     if err != nil {
         return "", err
     }
@@ -519,7 +538,9 @@ func (m *Cicd) Deploy(ctx context.Context, source *dagger.Directory) (string, er
 - `TerraformApply(ctx, client, terraformDir, varFile, autoApprove)` - Apply infrastructure
 
 **Secret Management:**
-- `LoadKubeconfig(ctx, client, path)` - Load kubeconfig as Dagger secret
+- `LoadKubeconfig(ctx, client)` - Load injected kubeconfig as Dagger secret
+- `GetKubectlContext()` - Get injected kubectl context
+- `GetHelmTimeout()` - Get injected helm timeout
 - `LoadSecretFile(name)` - Load secret from `~/.cicd-local/secrets/{name}`
 - `LoadSecretAsDaggerSecret(client, name)` - Load secret as Dagger secret
 - `GetEnvOrSecret(envVar, secretName)` - Try env var first, fallback to secret file

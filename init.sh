@@ -220,7 +220,7 @@ fi
 
 print_info "Copying examples from: ${EXAMPLES_SOURCE}"
 
-# Copy example files to cicd directory
+# Copy example files to cicd directory and replace project names
 for example_file in "${EXAMPLES_SOURCE}"/*.example.*; do
     if [ -f "${example_file}" ]; then
         filename=$(basename "${example_file}")
@@ -231,8 +231,15 @@ for example_file in "${EXAMPLES_SOURCE}"/*.example.*; do
         if [ -f "${target_name}" ]; then
             print_warning "Skipping ${target_name} (already exists)"
         else
-            cp "${example_file}" "${target_name}"
-            print_success "Copied ${filename} → ${target_name}"
+            # Copy file and replace Goserv references with actual project name
+            # Calculate lowercase version of MODULE_NAME for package/identifier replacements
+            module_name_lower=$(echo "${MODULE_NAME}" | tr '[:upper:]' '[:lower:]')
+            
+            # Replace both "Goserv" (class/type names) and "goserv" (identifiers, endpoints)
+            sed -e "s/Goserv/${MODULE_NAME}/g" \
+                -e "s/goserv/${module_name_lower}/g" \
+                "${example_file}" > "${target_name}"
+            print_success "Copied ${filename} → ${target_name} (replaced Goserv with ${MODULE_NAME})"
         fi
     fi
 done

@@ -68,8 +68,11 @@ cicd-local init typescript
 
 This creates a `cicd/` directory with:
 - Initialized Dagger module
-- Example function implementations
+- Example function implementations customized for your project
+- Privileged functions with placeholder secrets
 - Ready-to-customize contract code
+
+**Note**: Example files are automatically customized by replacing the legacy "Goserv" project name with your actual project name (e.g., class names, import paths, service endpoints).
 
 ### Validate Contract
 
@@ -233,7 +236,7 @@ NAMESPACE="goserv"
 
 ## Privileged Functions
 
-`cicd-local` provides reusable privileged functions for infrastructure deployment operations. These functions are **automatically copied** to your project during initialization and available for use in your Dagger code.
+`cicd-local` provides reusable privileged functions for infrastructure deployment operations. These functions are **automatically copied** to your project during initialization with **runtime secret injection** to maintain security.
 
 ### Available Functions
 
@@ -242,12 +245,20 @@ NAMESPACE="goserv"
 - **Terraform Operations** - Plan and apply infrastructure changes
 - **Secret Management** - Load kubeconfig and secrets from secure storage
 
-### Automatic Setup
+### Security Model
 
-Privileged functions are:
-1. ✅ **Copied during init** - Available immediately in `cicd/privileged/` for development
-2. 🔄 **Auto-injected at runtime** - Updated before pipeline execution if needed
-3. 📦 **Ready to import** - No import errors in your IDE during development
+Privileged functions use a **template-and-inject** pattern:
+
+1. ✅ **Development Time** - `cicd-local init` copies functions with placeholder secrets
+2. 🔐 **Runtime Injection** - Before `dagger call`, real credentials are injected from environment
+3. 🚫 **Isolation** - User-defined Dagger code cannot access secrets directly
+4. 🧹 **Cleanup** - Functions optionally removed after execution
+
+This ensures:
+- IDE has valid Go code (no import errors)
+- Secrets never stored in repositories
+- User code cannot extract credentials
+- Secrets only exist during pipeline execution
 
 ### Usage in Your Code
 
@@ -260,8 +271,8 @@ func (m *Cicd) Deploy(ctx context.Context, source *dagger.Directory) (string, er
     client, _ := dagger.Connect(ctx)
     defer client.Close()
     
-    // Load kubeconfig
-    kubeconfig, _ := privileged.LoadKubeconfig(ctx, client, "")
+    // Load injected kubeconfig (no path needed)
+    kubeconfig, _ := privileged.LoadKubeconfig(ctx, client)
     
     // Apply Kubernetes manifests
     output, err := privileged.KubectlApply(
@@ -276,15 +287,15 @@ func (m *Cicd) Deploy(ctx context.Context, source *dagger.Directory) (string, er
 
 ### Environment Variables
 
-Configure operations using environment variables:
+Configure operations using environment variables (injected at runtime):
 
 ```bash
-# Kubernetes/Helm operations
-export KUBECONFIG="~/.kube/config"      # Path to kubeconfig
+# Kubernetes/Helm operations (injected into secrets.go)
+export KUBECONFIG="~/.kube/config"      # Path to kubeconfig (read before injection)
 export KUBECTL_CONTEXT="prod-cluster"   # Kubernetes context
 export HELM_TIMEOUT="10m"               # Helm operation timeout
 
-# Terraform/AWS operations
+# Terraform/AWS operations (passed to containers)
 export AWS_ACCESS_KEY_ID="..."
 export AWS_SECRET_ACCESS_KEY="..."
 export AWS_REGION="us-east-1"

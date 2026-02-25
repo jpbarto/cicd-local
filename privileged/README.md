@@ -15,10 +15,26 @@ The privileged package includes functions for:
 
 Privileged functions are:
 
-1. ✅ **Copied during initialization** - Available in `cicd/privileged/` for development
-2. 🔄 **Updated at runtime** - Refreshed before each pipeline execution
-3. 📦 **Safe to commit** - Functions contain no sensitive credentials or secrets
+1. ✅ **Copied during initialization** - Available in `cicd/privileged/` for development with placeholder secrets
+2. 🔐 **Secrets injected at runtime** - Real credentials injected before `dagger call` execution
+3. 🚫 **Isolated from user code** - User-defined Dagger functions cannot access secrets directly
 4. 🧹 **Optionally cleaned** - Can be removed after execution with CICD_LOCAL_KEEP_PRIVILEGED=false
+
+### How Secret Injection Works
+
+1. **Development Time**: `cicd-local init` copies privileged functions with placeholder values (`__INJECTED_KUBECONFIG__`, etc.)
+2. **Runtime**: Before executing `dagger call`, `manage_privileged.sh` replaces placeholders with actual secrets from:
+   - `~/.kube/config` or `$KUBECONFIG` environment variable
+   - `$KUBECTL_CONTEXT` for Kubernetes context selection
+   - `$HELM_TIMEOUT` for Helm operation timeouts
+3. **Execution**: User-defined Dagger functions call privileged functions which use the injected secrets
+4. **Cleanup**: After execution, privileged functions are optionally removed (keeping them is useful for debugging)
+
+This approach ensures:
+- ✅ IDE has valid Go code during development (no import errors)
+- ✅ Sensitive credentials never stored in project repositories
+- ✅ User-defined Dagger code cannot access secrets directly
+- ✅ Secrets only exist in memory during pipeline execution
 
 ## Available Functions
 
@@ -59,8 +75,8 @@ func (m *Cicd) Deploy(ctx context.Context, source *dagger.Directory) (string, er
     client, _ := dagger.Connect(ctx)
     defer client.Close()
     
-    // Load kubeconfig
-    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client, "")
+    // Load kubeconfig (injected at runtime, no path needed)
+    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client)
     if err != nil {
         return "", err
     }
@@ -117,7 +133,7 @@ func (m *Cicd) CheckDeployment(ctx context.Context) (string, error) {
     defer client.Close()
     
     // Load kubeconfig
-    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client, "")
+    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client)
     if err != nil {
         return "", err
     }
@@ -176,7 +192,7 @@ func (m *Cicd) IntegrationTest(ctx context.Context) (string, error) {
     defer client.Close()
     
     // Load kubeconfig
-    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client, "")
+    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client)
     if err != nil {
         return "", err
     }
@@ -246,7 +262,7 @@ func (m *Cicd) Deploy(ctx context.Context, source *dagger.Directory) (string, er
     defer client.Close()
     
     // Load kubeconfig
-    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client, "")
+    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client)
     if err != nil {
         return "", err
     }
@@ -308,7 +324,7 @@ func (m *Cicd) UpgradeApp(ctx context.Context) (string, error) {
     defer client.Close()
     
     // Load kubeconfig
-    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client, "")
+    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client)
     if err != nil {
         return "", err
     }
@@ -435,23 +451,32 @@ func (m *Cicd) Deploy(ctx context.Context, source *dagger.Directory) (string, er
 
 #### LoadKubeconfig
 
-Loads a kubeconfig file as a Dagger secret.
+Loads the injected kubeconfig as a Dagger secret. The kubeconfig is automatically injected at runtime from `~/.kube/config` or `$KUBECONFIG`.
 
 ```go
 func LoadKubeconfig(
     ctx context.Context,
     client *dagger.Client,
-    kubeconfigPath string,
 ) (*dagger.Secret, error)
 ```
 
-**Parameters:**
+**No parameters required** - credentials are injected at runtime before Dagger execution.
 
-- `kubeconfigPath` - Optional path to kubeconfig file (uses ~/.kube/config if empty)
+#### GetKubectlContext
 
-**Environment Variables:**
+Returns the injected kubectl context value. Returns empty string if no context was set.
 
-- `KUBECONFIG` - Path to kubeconfig file (overrides default)
+```go
+func GetKubectlContext() string
+```
+
+#### GetHelmTimeout
+
+Returns the injected Helm timeout value. Returns "5m" as default if not set.
+
+```go
+func GetHelmTimeout() string
+```
 
 #### LoadSecretFile
 
@@ -559,7 +584,7 @@ func (m *Cicd) Deploy(ctx context.Context, source *dagger.Directory) (string, er
     }
     
     // 2. Load kubeconfig
-    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client, "")
+    kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client)
     if err != nil {
         return "", err
     }
