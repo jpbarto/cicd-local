@@ -31,16 +31,12 @@ public class Test {
      * IntegrationTest runs integration tests against a deployed goserv instance
      *
      * @param source Source directory containing the project
-     * @param kubeconfig Kubernetes config file content
-     * @param awsconfig AWS configuration file content
      * @param deploymentContext Deployment context from Deploy function
      * @param validationContext Validation context from Validate function
      * @return String containing test results
      */
     public String integrationTest(
             Directory source,
-            Secret kubeconfig,
-            Secret awsconfig,
             File deploymentContext,
             File validationContext) throws Exception {
         // Extract endpoint from deployment context if provided

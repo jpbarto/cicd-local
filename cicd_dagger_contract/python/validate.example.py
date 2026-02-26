@@ -13,8 +13,6 @@ class Validate:
     async def validate(
         self,
         source: dagger.Directory,
-        kubeconfig: dagger.Secret,
-        awsconfig: Optional[dagger.Secret] = None,
         release_candidate: Optional[bool] = False,
         deployment_context: Optional[dagger.File] = None,
     ) -> dagger.File:
@@ -22,8 +20,6 @@ class Validate:
         
         Args:
             source: Source directory containing the project
-            kubeconfig: Kubernetes config file content
-            awsconfig: AWS configuration file content
             release_candidate: Build as release candidate (appends -rc to version tag)
             deployment_context: Deployment context from Deploy function
         

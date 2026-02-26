@@ -162,8 +162,6 @@ async unitTest(
 func (m *YourModule) IntegrationTest(
     ctx context.Context,
     source *dagger.Directory,
-    kubeconfig *dagger.Secret,
-    awsconfig *dagger.Secret,
     deploymentContext *dagger.File,
     validationContext *dagger.File,
 ) (string, error)
@@ -175,8 +173,6 @@ func (m *YourModule) IntegrationTest(
 async def integration_test(
     self,
     source: dagger.Directory,
-    kubeconfig: dagger.Secret,
-    awsconfig: Optional[dagger.Secret] = None,
     deployment_context: Optional[dagger.File] = None,
     validation_context: Optional[dagger.File] = None,
 ) -> str:
@@ -186,8 +182,6 @@ async def integration_test(
 ```java
 public String integrationTest(
     Directory source,
-    Secret kubeconfig,
-    Secret awsconfig,
     File deploymentContext,
     File validationContext
 ) throws Exception
@@ -198,8 +192,6 @@ public String integrationTest(
 @func()
 async integrationTest(
     source: Directory,
-    kubeconfig: Secret,
-    awsconfig?: Secret,
     deploymentContext?: File,
     validationContext?: File
 ): Promise<string>
@@ -268,8 +260,6 @@ async deliver(
 func (m *YourModule) Deploy(
     ctx context.Context,
     source *dagger.Directory,
-    awsconfig *dagger.Secret,
-    kubeconfig *dagger.Secret,
     helmRepository string,
     containerRepository string,
     releaseCandidate bool,
@@ -282,8 +272,6 @@ func (m *YourModule) Deploy(
 async def deploy(
     self,
     source: dagger.Directory,
-    awsconfig: Optional[dagger.Secret] = None,
-    kubeconfig: Optional[dagger.Secret] = None,
     helm_repository: str = "oci://ttl.sh",
     container_repository: str = "ttl.sh",
     release_candidate: bool = False,
@@ -294,8 +282,6 @@ async def deploy(
 ```java
 public File deploy(
     Directory source,
-    Secret awsconfig,
-    Secret kubeconfig,
     String helmRepository,
     String containerRepository,
     boolean releaseCandidate
@@ -307,8 +293,6 @@ public File deploy(
 @func()
 async deploy(
     source: Directory,
-    awsconfig?: Secret,
-    kubeconfig?: Secret,
     helmRepository: string = "oci://ttl.sh",
     containerRepository: string = "ttl.sh",
     releaseCandidate: boolean = false
@@ -326,8 +310,6 @@ async deploy(
 func (m *YourModule) Validate(
     ctx context.Context,
     source *dagger.Directory,
-    kubeconfig *dagger.Secret,
-    awsconfig *dagger.Secret,
     releaseCandidate bool,
     deploymentContext *dagger.File,
 ) (*dagger.File, error)
@@ -339,8 +321,6 @@ func (m *YourModule) Validate(
 async def validate(
     self,
     source: dagger.Directory,
-    kubeconfig: dagger.Secret,
-    awsconfig: Optional[dagger.Secret] = None,
     release_candidate: bool = False,
     deployment_context: Optional[dagger.File] = None,
 ) -> dagger.File:
@@ -350,8 +330,6 @@ async def validate(
 ```java
 public File validate(
     Directory source,
-    Secret kubeconfig,
-    Secret awsconfig,
     boolean releaseCandidate,
     File deploymentContext
 ) throws Exception
@@ -362,8 +340,6 @@ public File validate(
 @func()
 async validate(
     source: Directory,
-    kubeconfig: Secret,
-    awsconfig?: Secret,
     releaseCandidate: boolean = false,
     deploymentContext?: File
 ): Promise<File>

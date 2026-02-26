@@ -15,7 +15,7 @@ For complete documentation, see:
 
 - **[Contract Reference](../docs/CONTRACT_REFERENCE.md)** - Complete contract specification
 - **[Contract Validation](../docs/CONTRACT_VALIDATION.md)** - Validation guide with examples
-- **[Deployment Context](../docs/DEPLOYMENT_CONTEXT.md)** - Advanced deployment patterns
+- **[Context Files](../docs/CONTEXT_FILES.md)** - Context files for inter-function communication
 - **[User Guide](../docs/USER_GUIDE.md)** - Complete usage guide
 
 ## Quick Start

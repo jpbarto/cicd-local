@@ -182,11 +182,13 @@ head -20 my-project/cicd/privileged/secrets.go
 ### ❌ Pass Secrets via dagger call Arguments
 
 ```bash
-# BAD - Exposes secrets to user code
+# BAD - Would expose secrets to untrusted user-defined Dagger code
+# NOTE: This is no longer supported by the contract.
+# Deploy, Validate, and IntegrationTest do NOT accept --kubeconfig.
 dagger call deploy --kubeconfig-file=~/.kube/config
 ```
 
-**Problem**: User-defined Dagger functions receive the file content directly.
+**Problem**: User-defined Dagger functions would receive the file content directly.
 
 ### ❌ Mount Secret Files into Container
 

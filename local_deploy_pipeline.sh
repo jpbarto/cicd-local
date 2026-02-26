@@ -284,88 +284,9 @@ else
     exit 1
 fi
 
-################################################################################
-# Step 2.5: Create Minimal Kubeconfig for Current Context
-################################################################################
+# Note: Kubeconfig and AWS credentials are injected via privileged functions
+# (see manage_privileged.sh). They are NOT passed as dagger call arguments.
 
-print_step "Step 2.5: Create Minimal Kubeconfig"
-
-# Create a temporary kubeconfig file with only the current context
-TEMP_KUBECONFIG=$(mktemp /tmp/kubeconfig.XXXXXX)
-
-# Register cleanup on exit
-trap "rm -f ${TEMP_KUBECONFIG}" EXIT
-
-# Get current context name for logging
-CURRENT_CONTEXT=$(kubectl config current-context)
-print_info "Current context: ${CURRENT_CONTEXT}"
-
-# Generate minimal kubeconfig with only the current context using kubectl
-kubectl config view --minify --raw > "${TEMP_KUBECONFIG}"
-
-# Validate the generated kubeconfig
-if kubectl --kubeconfig="${TEMP_KUBECONFIG}" cluster-info &> /dev/null; then
-    print_success "Minimal kubeconfig created successfully: ${TEMP_KUBECONFIG}"
-else
-    print_error "Generated kubeconfig is invalid"
-    cat "${TEMP_KUBECONFIG}"
-    exit 1
-fi
-
-################################################################################
-# Step 2.6: Create AWS Config for LocalStack
-################################################################################
-
-print_step "Step 2.6: Create AWS Config for LocalStack"
-
-# Create temporary AWS config file
-TEMP_AWS_CONFIG=$(mktemp /tmp/aws_config.XXXXXX)
-
-# Add to cleanup trap
-trap "rm -f ${TEMP_KUBECONFIG} ${TEMP_AWS_CONFIG}" EXIT
-
-# Check if AWS CLI is installed and configured
-if command -v aws &> /dev/null; then
-    print_success "AWS CLI is installed"
-    
-    # Check if LocalStack environment variables are set
-    if [ -n "${LOCALSTACK_ENDPOINT:-}" ]; then
-        ENDPOINT_URL="${LOCALSTACK_ENDPOINT}"
-        print_info "Using LocalStack endpoint from environment: ${ENDPOINT_URL}"
-    else
-        # Default LocalStack endpoint
-        ENDPOINT_URL="http://localhost:4566"
-        print_info "Using default LocalStack endpoint: ${ENDPOINT_URL}"
-    fi
-    
-    # Get AWS credentials (use dummy values for LocalStack if not set)
-    AWS_ACCESS_KEY_ID="test"
-    AWS_SECRET_ACCESS_KEY="test"
-    AWS_REGION="${AWS_REGION:-us-east-1}"
-    
-    # Create AWS config file compatible with LocalStack
-    cat > "${TEMP_AWS_CONFIG}" << EOF
-[default]
-endpoint_url = ${ENDPOINT_URL}
-output = json
-region = ${AWS_REGION}
-aws_access_key_id = ${AWS_ACCESS_KEY_ID}
-aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
-EOF
-    
-    # Test AWS config with LocalStack
-    if AWS_CONFIG_FILE="${TEMP_AWS_CONFIG}" aws --endpoint-url="${ENDPOINT_URL}" sts get-caller-identity &> /dev/null; then
-        print_success "AWS config created and validated for LocalStack: ${TEMP_AWS_CONFIG}"
-        USE_AWS_CONFIG=true
-    else
-        print_warning "Could not validate AWS config (LocalStack may not be running)"
-        print_info "Continuing without AWS configuration..."
-        USE_AWS_CONFIG=false
-    fi
-else
-    print_warning "AWS CLI not installed - skipping AWS configuration"
-    USE_AWS_CONFIG=false
-fi
 
 ################################################################################
 # Step 3: Deploy Application using Dagger
@@ -378,8 +299,6 @@ mkdir -p ./output/deploy
 
 # Build Dagger Deploy command - export deployment context
 DEPLOY_CMD="dagger -m cicd call deploy --source=${SOURCE_DIR}"
-DEPLOY_CMD="${DEPLOY_CMD} --awsconfig=file://${TEMP_AWS_CONFIG}"
-DEPLOY_CMD="${DEPLOY_CMD} --kubeconfig=file://${TEMP_KUBECONFIG}"
 DEPLOY_CMD="${DEPLOY_CMD} --helm-repository=${HELM_REPOSITORY_URL}"
 DEPLOY_CMD="${DEPLOY_CMD} --container-repository=${CONTAINER_REPOSITORY_URL}"
 
@@ -416,12 +335,6 @@ if [ "$SKIP_VALIDATION" = false ]; then
     
     # Build Dagger Validate command
     VALIDATE_CMD="dagger -m cicd call validate --source=${SOURCE_DIR}"
-    VALIDATE_CMD="${VALIDATE_CMD} --kubeconfig=file://${TEMP_KUBECONFIG}"
-    
-    # Add AWS config if available
-    if [ "$USE_AWS_CONFIG" = true ]; then
-        VALIDATE_CMD="${VALIDATE_CMD} --awsconfig=file://${TEMP_AWS_CONFIG}"
-    fi
     
     # Add deployment context if available
     if [ -f "./output/deploy/deploymentContext" ]; then

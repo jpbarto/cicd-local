@@ -154,10 +154,10 @@ get_golang_contract() {
     case "$1" in
         Build) echo "ctx:context.Context,source:*dagger.Directory,releaseCandidate:bool" ;;
         UnitTest) echo "ctx:context.Context,source:*dagger.Directory,buildArtifact:*dagger.File" ;;
-        IntegrationTest) echo "ctx:context.Context,source:*dagger.Directory,targetUrl:string,deploymentContext:*dagger.File" ;;
+        IntegrationTest) echo "ctx:context.Context,source:*dagger.Directory,deploymentContext:*dagger.File,validationContext:*dagger.File" ;;
         Deliver) echo "ctx:context.Context,source:*dagger.Directory,containerRepository:string,helmRepository:string,buildArtifact:*dagger.File,releaseCandidate:bool" ;;
-        Deploy) echo "ctx:context.Context,source:*dagger.Directory,awsconfig:*dagger.Secret,kubeconfig:*dagger.Secret,helmRepository:string,containerRepository:string,releaseCandidate:bool" ;;
-        Validate) echo "ctx:context.Context,source:*dagger.Directory,kubeconfig:*dagger.Secret,releaseName:string,namespace:string,expectedVersion:string,releaseCandidate:bool,deploymentContext:*dagger.File" ;;
+        Deploy) echo "ctx:context.Context,source:*dagger.Directory,helmRepository:string,containerRepository:string,releaseCandidate:bool" ;;
+        Validate) echo "ctx:context.Context,source:*dagger.Directory,releaseCandidate:bool,deploymentContext:*dagger.File" ;;
     esac
 }
 
@@ -165,10 +165,10 @@ get_python_contract() {
     case "$1" in
         build) echo "source:dagger.Directory,release_candidate:bool" ;;
         unit_test) echo "source:dagger.Directory,build_artifact:dagger.File" ;;
-        integration_test) echo "source:dagger.Directory,target_url:str,deployment_context:dagger.File" ;;
+        integration_test) echo "source:dagger.Directory,deployment_context:dagger.File,validation_context:dagger.File" ;;
         deliver) echo "source:dagger.Directory,container_repository:str,helm_repository:str,build_artifact:dagger.File,release_candidate:bool" ;;
-        deploy) echo "source:dagger.Directory,awsconfig:dagger.Secret,kubeconfig:dagger.Secret,helm_repository:str,container_repository:str,release_candidate:bool" ;;
-        validate) echo "source:dagger.Directory,kubeconfig:dagger.Secret,release_name:str,namespace:str,expected_version:str,release_candidate:bool,deployment_context:dagger.File" ;;
+        deploy) echo "source:dagger.Directory,helm_repository:str,container_repository:str,release_candidate:bool" ;;
+        validate) echo "source:dagger.Directory,release_candidate:bool,deployment_context:dagger.File" ;;
     esac
 }
 
@@ -176,10 +176,10 @@ get_java_contract() {
     case "$1" in
         build) echo "source:Directory,releaseCandidate:boolean" ;;
         unitTest) echo "source:Directory,buildArtifact:File" ;;
-        integrationTest) echo "source:Directory,targetUrl:String,deploymentContext:File" ;;
+        integrationTest) echo "source:Directory,deploymentContext:File,validationContext:File" ;;
         deliver) echo "source:Directory,containerRepository:String,helmRepository:String,buildArtifact:File,releaseCandidate:boolean" ;;
-        deploy) echo "source:Directory,awsconfig:Secret,kubeconfig:Secret,helmRepository:String,containerRepository:String,releaseCandidate:boolean" ;;
-        validate) echo "source:Directory,kubeconfig:Secret,releaseName:String,namespace:String,expectedVersion:String,releaseCandidate:boolean,deploymentContext:File" ;;
+        deploy) echo "source:Directory,helmRepository:String,containerRepository:string,releaseCandidate:boolean" ;;
+        validate) echo "source:Directory,releaseCandidate:boolean,deploymentContext:File" ;;
     esac
 }
 
@@ -187,10 +187,10 @@ get_typescript_contract() {
     case "$1" in
         build) echo "source:Directory,releaseCandidate:boolean" ;;
         unitTest) echo "source:Directory,buildArtifact:File" ;;
-        integrationTest) echo "source:Directory,targetUrl:string,deploymentContext:File" ;;
+        integrationTest) echo "source:Directory,deploymentContext:File,validationContext:File" ;;
         deliver) echo "source:Directory,containerRepository:string,helmRepository:string,buildArtifact:File,releaseCandidate:boolean" ;;
-        deploy) echo "source:Directory,awsconfig:Secret,kubeconfig:Secret,helmRepository:string,containerRepository:string,releaseCandidate:boolean" ;;
-        validate) echo "source:Directory,kubeconfig:Secret,releaseName:string,namespace:string,expectedVersion:string,releaseCandidate:boolean,deploymentContext:File" ;;
+        deploy) echo "source:Directory,helmRepository:string,containerRepository:string,releaseCandidate:boolean" ;;
+        validate) echo "source:Directory,releaseCandidate:boolean,deploymentContext:File" ;;
     esac
 }
 

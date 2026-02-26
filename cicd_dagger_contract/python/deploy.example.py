@@ -13,8 +13,6 @@ class Deploy:
     async def deploy(
         self,
         source: dagger.Directory,
-        kubeconfig: Optional[dagger.Secret] = None,
-        awsconfig: Optional[dagger.Secret] = None,
         helm_repository: Optional[str] = "oci://ttl.sh",
         container_repository: Optional[str] = "ttl.sh",
         release_candidate: Optional[bool] = False,
@@ -25,8 +23,6 @@ class Deploy:
         
         Args:
             source: Source directory containing the project
-            kubeconfig: Kubernetes config file content
-            awsconfig: AWS configuration file content
             helm_repository: Helm chart repository URL (default: oci://ttl.sh)
             container_repository: Container repository URL (default: ttl.sh)
             release_candidate: Build as release candidate (appends -rc to version tag)

@@ -32,8 +32,6 @@ export class Test {
    * IntegrationTest runs integration tests against a deployed instance
    *
    * @param source Source directory containing the project
-   * @param kubeconfig Kubernetes config file content
-   * @param awsconfig AWS configuration file content
    * @param deploymentContext Deployment context from Deploy function
    * @param validationContext Validation context from Validate function
    * @returns String containing test results
@@ -41,8 +39,6 @@ export class Test {
   @func()
   async integrationTest(
     source: Directory,
-    kubeconfig: Secret,
-    awsconfig?: Secret,
     deploymentContext?: File,
     validationContext?: File
   ): Promise<string> {

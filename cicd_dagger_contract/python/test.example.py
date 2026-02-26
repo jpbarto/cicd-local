@@ -37,8 +37,6 @@ class Test:
     async def integration_test(
         self,
         source: dagger.Directory,
-        kubeconfig: dagger.Secret,
-        awsconfig: Optional[dagger.Secret] = None,
         deployment_context: Optional[dagger.File] = None,
         validation_context: Optional[dagger.File] = None,
     ) -> str:
@@ -46,8 +44,6 @@ class Test:
         
         Args:
             source: Source directory containing the project
-            kubeconfig: Kubernetes config file content
-            awsconfig: AWS configuration file content
             deployment_context: Deployment context from Deploy function
             validation_context: Validation context from Validate function
         

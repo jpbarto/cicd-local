@@ -10,8 +10,6 @@ export class Validate {
    * Validate runs the validation script to verify that the deployment is healthy and functioning correctly
    *
    * @param source Source directory containing the project
-   * @param kubeconfig Kubernetes config file content
-   * @param awsconfig AWS configuration file content
    * @param releaseCandidate Build as release candidate (appends -rc to version tag)
    * @param deploymentContext Deployment context from Deploy function
    * @returns File containing validation context
@@ -19,8 +17,6 @@ export class Validate {
   @func()
   async validate(
     source: Directory,
-    kubeconfig: Secret,
-    awsconfig?: Secret,
     releaseCandidate: boolean = false,
     deploymentContext?: File
   ): Promise<File> {

@@ -42,11 +42,10 @@ The cicd-local contract uses context files to pass information between pipeline 
 - **Suggested Contents**: Validation status, health check results, endpoint
 
 ### IntegrationTest Function
-- **New Parameter**: `kubeconfig` (required) - Kubernetes configuration for access
-- **New Parameter**: `awsconfig` (optional) - AWS configuration
 - **New Parameter**: `deploymentContext` (optional) - File from Deploy function
 - **New Parameter**: `validationContext` (optional) - File from Validate function
 - **Removed**: `targetUrl` parameter (use deploymentContext endpoint instead)
+- **Removed**: `kubeconfig` and `awsconfig` parameters (provided via privileged functions)
 
 ## Recommended JSON Formats
 
@@ -191,8 +190,6 @@ func (m *MyApp) Deliver(
 func (m *MyApp) Deploy(
     ctx context.Context,
     source *dagger.Directory,
-    awsconfig *dagger.Secret,
-    kubeconfig *dagger.Secret,
     helmRepository string,
     containerRepository string,
     releaseCandidate bool,
@@ -229,8 +226,6 @@ func (m *MyApp) Deploy(
 async def deploy(
     self,
     source: dagger.Directory,
-    awsconfig: Optional[dagger.Secret] = None,
-    kubeconfig: Optional[dagger.Secret] = None,
     helm_repository: str = "oci://ttl.sh",
     container_repository: str = "ttl.sh",
     release_candidate: bool = False,
@@ -271,9 +266,7 @@ The Validate function now returns a File containing validation results that can 
 ```go
 func (m *MyApp) Validate(
     ctx context.Context,
-    kubeconfig *dagger.File,
     deploymentContext *dagger.File,
-    awsconfig *dagger.Secret,
 ) (*dagger.File, error) {
     // Extract deployment information
     contextContent, _ := deploymentContext.Contents(ctx)
@@ -284,7 +277,7 @@ func (m *MyApp) Validate(
     releaseName := depContext["releaseName"].(string)
     
     // Perform validation checks
-    results := validateDeployment(ctx, kubeconfig, endpoint, releaseName)
+    results := validateDeployment(ctx, endpoint, releaseName)
     
     // Create validation context with results
     validationContext := map[string]interface{}{
@@ -309,9 +302,7 @@ func (m *MyApp) Validate(
 ```python
 async def validate(
     self,
-    kubeconfig: dagger.File,
     deployment_context: dagger.File,
-    awsconfig: Optional[dagger.Secret] = None,
 ) -> dagger.File:
     # Extract deployment information
     context_content = await deployment_context.contents()
@@ -321,7 +312,7 @@ async def validate(
     release_name = dep_context["releaseName"]
     
     # Perform validation checks
-    results = await validate_deployment(kubeconfig, endpoint, release_name)
+    results = await validate_deployment(endpoint, release_name)
     
     # Create validation context with results
     validation_context = {
@@ -352,8 +343,6 @@ IntegrationTest can now accept both deploymentContext and validationContext to g
 func (m *MyApp) IntegrationTest(
     ctx context.Context,
     source *dagger.Directory,
-    kubeconfig *dagger.File,
-    awsconfig *dagger.Secret,
     deploymentContext *dagger.File,
     validationContext *dagger.File,
 ) (string, error) {
@@ -391,8 +380,6 @@ func (m *MyApp) IntegrationTest(
 async def integration_test(
     self,
     source: dagger.Directory,
-    kubeconfig: dagger.File,
-    awsconfig: Optional[dagger.Secret] = None,
     deployment_context: Optional[dagger.File] = None,
     validation_context: Optional[dagger.File] = None,
 ) -> str:
@@ -462,12 +449,11 @@ dagger -m cicd call deliver \
     export --path=./output/deliver/deliveryContext
 ```
 
-2. **Deploy with Kubeconfig:**
+2. **Deploy:**
 ```bash
 # Deploy and capture deployment context
 dagger -m cicd call deploy \
     --source=. \
-    --kubeconfig=file://~/.kube/config \
     --helm-repository=oci://ttl.sh \
     --container-repository=ttl.sh \
     export --path=./output/deploy/deploymentContext
@@ -477,7 +463,7 @@ dagger -m cicd call deploy \
 ```bash
 # Validate and capture validation context
 dagger -m cicd call validate \
-    --kubeconfig=file:~/.kube/config \
+    --source=. \
     --deployment-context=file:./output/deploy/deploymentContext \
     export --path=./output/validate/validationContext
 ```
@@ -487,7 +473,6 @@ dagger -m cicd call validate \
 # Run integration tests with context files
 dagger -m cicd call integration-test \
     --source=. \
-    --kubeconfig=file:~/.kube/config \
     --deployment-context=file:./output/deploy/deploymentContext \
     --validation-context=file:./output/validate/validationContext
 ```

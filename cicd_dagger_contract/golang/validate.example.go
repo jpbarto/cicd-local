@@ -15,11 +15,6 @@ func (m *Goserv) Validate(
 	ctx context.Context,
 	// Source directory containing the project
 	source *dagger.Directory,
-	// Kubernetes config file content
-	kubeconfig *dagger.Secret,
-	// +optional
-	// AWS configuration file content
-	awsconfig *dagger.Secret,
 	// +optional
 	// Build as release candidate (appends -rc to version tag)
 	releaseCandidate bool,

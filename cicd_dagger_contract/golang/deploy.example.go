@@ -17,12 +17,6 @@ func (m *Goserv) Deploy(
 	// Source directory containing the project
 	source *dagger.Directory,
 	// +optional
-	// Kubernetes config file content
-	kubeconfig *dagger.Secret,
-	// +optional
-	// AWS configuration file content
-	awsconfig *dagger.Secret,
-	// +optional
 	// Helm chart repository URL (default: oci://ttl.sh)
 	helmRepository string,
 	// +optional

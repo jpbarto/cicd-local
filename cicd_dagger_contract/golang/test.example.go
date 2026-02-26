@@ -36,11 +36,6 @@ func (m *Goserv) IntegrationTest(
 	ctx context.Context,
 	// Source directory containing the project
 	source *dagger.Directory,
-	// Kubernetes config file content
-	kubeconfig *dagger.Secret,
-	// +optional
-	// AWS configuration file content
-	awsconfig *dagger.Secret,
 	// +optional
 	// Deployment context from Deploy function
 	deploymentContext *dagger.File,

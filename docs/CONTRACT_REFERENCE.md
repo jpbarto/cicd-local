@@ -154,7 +154,7 @@ Deploy → Validate
 - **Notes**: 
   - Can skip validation with `--skip-validation`
   - Works with Colima or any Kubernetes cluster
-  - Uses kubeconfig from `~/.kube/config`
+  - Kubeconfig is injected via privileged functions at runtime
 
 ---
 
@@ -229,8 +229,6 @@ func (m *Goserv) UnitTest(
 func (m *Goserv) IntegrationTest(
     ctx context.Context,
     source *dagger.Directory,
-    kubeconfig *dagger.Secret,
-    awsconfig *dagger.Secret,
     deploymentContext *dagger.File,
     validationContext *dagger.File,
 ) (string, error)
@@ -239,8 +237,6 @@ func (m *Goserv) IntegrationTest(
 **Parameters**:
 - `ctx context.Context` - Go context for cancellation and timeout control
 - `source *dagger.Directory` - Source directory containing integration test scripts
-- `kubeconfig *dagger.Secret` - (Required) Kubernetes configuration for accessing deployed services
-- `awsconfig *dagger.Secret` - (Optional) AWS configuration for cloud-based testing
 - `deploymentContext *dagger.File` - (Optional) Deployment context file from Deploy function containing endpoint information
 - `validationContext *dagger.File` - (Optional) Validation context file from Validate function with validation results
 
@@ -304,8 +300,6 @@ func (m *Goserv) Deliver(
 func (m *Goserv) Deploy(
     ctx context.Context,
     source *dagger.Directory,
-    awsconfig *dagger.Secret,
-    kubeconfig *dagger.Secret,
     helmRepository string,
     containerRepository string,
     releaseCandidate bool,
@@ -318,8 +312,6 @@ func (m *Goserv) Deploy(
 **Parameters**:
 - `ctx context.Context` - Go context for cancellation and timeout control
 - `source *dagger.Directory` - Source directory containing deployment manifests
-- `awsconfig *dagger.Secret` - (Optional) AWS configuration for cloud deployments
-- `kubeconfig *dagger.Secret` - (Optional) Kubernetes configuration file content (as a secret for security)
 - `helmRepository string` - (Optional, default: `oci://ttl.sh`) Helm chart repository URL
 - `containerRepository string` - (Optional, default: `ttl.sh`) Container repository URL for pulling images
 - `releaseCandidate bool` - (Optional) Whether to deploy release candidate version
@@ -334,7 +326,7 @@ func (m *Goserv) Deploy(
 - For ArgoCD-based deployments: `kubectl apply -f application.yaml`
 - Read version from `VERSION` file to determine which chart/image version to deploy
 - Should wait for deployment to be ready before returning
-- The `kubeconfig` secret allows deployment to different clusters (local, staging, production)
+- Kubeconfig and AWS credentials are provided via privileged functions (injected at runtime), not as function parameters
 
 ---
 
@@ -347,8 +339,6 @@ func (m *Goserv) Deploy(
 func (m *Goserv) Validate(
     ctx context.Context,
     source *dagger.Directory,
-    kubeconfig *dagger.Secret,
-    awsconfig *dagger.Secret,
     releaseCandidate bool,
     deploymentContext *dagger.File,
 ) (*dagger.File, error)
@@ -357,8 +347,6 @@ func (m *Goserv) Validate(
 **Parameters**:
 - `ctx context.Context` - Go context for cancellation and timeout control
 - `source *dagger.Directory` - Source directory containing validation scripts
-- `kubeconfig *dagger.Secret` - (Required) Kubernetes configuration file content
-- `awsconfig *dagger.Secret` - (Optional) AWS configuration for cloud-based validation
 - `releaseCandidate bool` - (Optional) Whether validating a release candidate
 - `deploymentContext *dagger.File` - (Optional) Deployment context file from Deploy function
 
@@ -409,7 +397,6 @@ Parameters marked with `// +optional` can be omitted when calling the function. 
 - `helmRepository`: `oci://ttl.sh`
 - `releaseName`: `goserv`
 - `namespace`: `goserv`
-- `targetUrl`: Empty string (use deploymentContext endpoint if available)
 
 ### Version Handling
 All functions that work with versions should:
@@ -460,7 +447,8 @@ IMAGE=$(dagger call build --source=. --release-candidate=false)
 
 # Test
 dagger call unit-test --source=. --build-artifact="$IMAGE"
-dagger call integration-test --source=. --target-url=http://staging.example.com
+dagger call integration-test --source=. \
+  --deployment-context=file:./output/deploy/deploymentContext
 
 # Deliver
 dagger call deliver --source=. --build-artifact="$IMAGE" \
@@ -469,11 +457,10 @@ dagger call deliver --source=. --build-artifact="$IMAGE" \
 
 # Deploy & Validate
 dagger call deploy --source=. \
-  --kubeconfig=env:KUBECONFIG \
   --helm-repository=oci://ghcr.io/myorg/charts
 
 dagger call validate --source=. \
-  --kubeconfig=env:KUBECONFIG
+  --deployment-context=file:./output/deploy/deploymentContext
 ```
 
 ---
@@ -530,10 +517,12 @@ dagger -m cicd call deliver --source=. \
   --release-candidate=true
 ```
 
-**Passing Kubeconfig as Secret**:
+**Kubeconfig via Privileged Functions**:
 ```bash
-dagger -m cicd call deploy --source=. \
-  --kubeconfig=file:${HOME}/.kube/config
+# Kubeconfig is injected via privileged functions at runtime.
+# No --kubeconfig argument is needed in dagger call commands.
+# Configure via environment variable before running pipeline:
+export KUBECONFIG=~/.kube/config
 ```
 
 **Conditional Release Candidate Flag**:
@@ -545,20 +534,21 @@ dagger -m cicd call deploy --source=. \
 --release-candidate=false  # or omit the flag
 ```
 
-**Integration Testing with Port Forward**:
+**Integration Testing with Context Files**:
 ```bash
-# Use host.docker.internal to reach localhost from Dagger container
+# Use deployment and validation context files
 dagger -m cicd call integration-test --source=. \
-  --target-url=http://host.docker.internal:8080
+  --deployment-context=file:./output/deploy/deploymentContext \
+  --validation-context=file:./output/validate/validationContext
 ```
 
 ### When Migrating from Shell Scripts to Dagger Functions
 
 1. Replace `dagger call build` commands with function invocations
-2. Pass kubeconfig via secrets: `--kubeconfig=file:~/.kube/config`
+2. Kubeconfig is injected via privileged functions — no need to pass `--kubeconfig` as an argument
 3. Chain functions using pipes or exported files (tarballs)
 4. Handle boolean flags explicitly (`--release-candidate=true`)
-5. Use `host.docker.internal` for integration tests targeting localhost
+5. Use context files to pass deployment info between functions
 6. Export build artifacts to files when they need to be reused across multiple function calls
 
 ---

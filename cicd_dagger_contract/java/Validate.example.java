@@ -17,16 +17,12 @@ public class Validate {
      * Validate runs the validation script to verify that the deployment is healthy and functioning correctly
      *
      * @param source Source directory containing the project
-     * @param kubeconfig Kubernetes config file content
-     * @param awsconfig AWS configuration file content
      * @param releaseCandidate Build as release candidate (appends -rc to version tag)
      * @param deploymentContext Deployment context from Deploy function
      * @return File containing validation context
      */
     public File validate(
             Directory source,
-            Secret kubeconfig,
-            Secret awsconfig,
             boolean releaseCandidate,
             File deploymentContext) throws Exception {
         // Extract deployment information from context if provided

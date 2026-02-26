@@ -17,8 +17,6 @@ public class Deploy {
      * Note: This function should have cache = "never" configuration
      *
      * @param source Source directory containing the project
-     * @param kubeconfig Kubernetes config file content
-     * @param awsconfig AWS configuration file content
      * @param helmRepository Helm chart repository URL (default: oci://ttl.sh)
      * @param containerRepository Container repository URL (default: ttl.sh)
      * @param releaseCandidate Build as release candidate (appends -rc to version tag)
@@ -26,8 +24,6 @@ public class Deploy {
      */
     public File deploy(
             Directory source,
-            Secret kubeconfig,
-            Secret awsconfig,
             String helmRepository,
             String containerRepository,
             boolean releaseCandidate) throws Exception {
