@@ -155,7 +155,7 @@ get_golang_contract() {
         Build) echo "ctx:context.Context,source:*dagger.Directory,releaseCandidate:bool" ;;
         UnitTest) echo "ctx:context.Context,source:*dagger.Directory,buildArtifact:*dagger.File" ;;
         IntegrationTest) echo "ctx:context.Context,source:*dagger.Directory,deploymentContext:*dagger.File,validationContext:*dagger.File" ;;
-        Deliver) echo "ctx:context.Context,source:*dagger.Directory,containerRepository:string,helmRepository:string,buildArtifact:*dagger.File,releaseCandidate:bool" ;;
+        Deliver) echo "ctx:context.Context,source:*dagger.Directory,buildArtifact:*dagger.File,releaseCandidate:bool" ;;
         Deploy) echo "ctx:context.Context,source:*dagger.Directory,helmRepository:string,containerRepository:string,releaseCandidate:bool" ;;
         Validate) echo "ctx:context.Context,source:*dagger.Directory,releaseCandidate:bool,deploymentContext:*dagger.File" ;;
     esac
@@ -166,7 +166,7 @@ get_python_contract() {
         build) echo "source:dagger.Directory,release_candidate:bool" ;;
         unit_test) echo "source:dagger.Directory,build_artifact:dagger.File" ;;
         integration_test) echo "source:dagger.Directory,deployment_context:dagger.File,validation_context:dagger.File" ;;
-        deliver) echo "source:dagger.Directory,container_repository:str,helm_repository:str,build_artifact:dagger.File,release_candidate:bool" ;;
+        deliver) echo "source:dagger.Directory,build_artifact:dagger.File,release_candidate:bool" ;;
         deploy) echo "source:dagger.Directory,helm_repository:str,container_repository:str,release_candidate:bool" ;;
         validate) echo "source:dagger.Directory,release_candidate:bool,deployment_context:dagger.File" ;;
     esac
@@ -177,8 +177,8 @@ get_java_contract() {
         build) echo "source:Directory,releaseCandidate:boolean" ;;
         unitTest) echo "source:Directory,buildArtifact:File" ;;
         integrationTest) echo "source:Directory,deploymentContext:File,validationContext:File" ;;
-        deliver) echo "source:Directory,containerRepository:String,helmRepository:String,buildArtifact:File,releaseCandidate:boolean" ;;
-        deploy) echo "source:Directory,helmRepository:String,containerRepository:string,releaseCandidate:boolean" ;;
+        deliver) echo "source:Directory,buildArtifact:File,releaseCandidate:boolean" ;;
+        deploy) echo "source:Directory,helmRepository:String,containerRepository:String,releaseCandidate:boolean" ;;
         validate) echo "source:Directory,releaseCandidate:boolean,deploymentContext:File" ;;
     esac
 }
@@ -188,7 +188,7 @@ get_typescript_contract() {
         build) echo "source:Directory,releaseCandidate:boolean" ;;
         unitTest) echo "source:Directory,buildArtifact:File" ;;
         integrationTest) echo "source:Directory,deploymentContext:File,validationContext:File" ;;
-        deliver) echo "source:Directory,containerRepository:string,helmRepository:string,buildArtifact:File,releaseCandidate:boolean" ;;
+        deliver) echo "source:Directory,buildArtifact:File,releaseCandidate:boolean" ;;
         deploy) echo "source:Directory,helmRepository:string,containerRepository:string,releaseCandidate:boolean" ;;
         validate) echo "source:Directory,releaseCandidate:boolean,deploymentContext:File" ;;
     esac

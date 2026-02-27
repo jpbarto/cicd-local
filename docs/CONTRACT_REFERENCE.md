@@ -262,8 +262,6 @@ func (m *Goserv) IntegrationTest(
 func (m *Goserv) Deliver(
     ctx context.Context,
     source *dagger.Directory,
-    containerRepository string,
-    helmRepository string,
     buildArtifact *dagger.File,
     releaseCandidate bool,
 ) (*dagger.File, error)
@@ -272,19 +270,16 @@ func (m *Goserv) Deliver(
 **Parameters**:
 - `ctx context.Context` - Go context for cancellation and timeout control
 - `source *dagger.Directory` - Source directory containing Helm charts and application files
-- `containerRepository string` - (Optional, default: `ttl.sh`) Container registry URL (e.g., `ghcr.io/org`, `docker.io/username`)
-- `helmRepository string` - (Optional, default: `oci://ttl.sh`) Helm chart repository URL (OCI or classic HTTP)
 - `buildArtifact *dagger.File` - (Optional) Pre-built OCI image tarball. If not provided, should build from source
 - `releaseCandidate bool` - (Optional) Whether this is a release candidate (affects version tagging)
 
 **Return Values**:
 - `*dagger.File` - Delivery context file containing JSON metadata about published artifacts (image references, chart locations, versions)
 - `error` - Error if publishing fails
-- `error` - Error if publishing fails
 
 **Usage Notes**:
-- Should publish multi-architecture container images to the specified registry
-- Should package and publish Helm charts to the chart repository
+- Should publish multi-architecture container images using `cicd.ContainerPush()` (repository URL is injected via privileged secrets)
+- Should package and publish Helm charts using `cicd.HelmPush()` (repository URL is injected via privileged secrets)
 - Update Helm chart values with the correct image repository and tag
 - Read version from `VERSION` file and append `-rc` if `releaseCandidate` is true
 - Return references to published artifacts for traceability
@@ -451,9 +446,7 @@ dagger call integration-test --source=. \
   --deployment-context=file:./output/deploy/deploymentContext
 
 # Deliver
-dagger call deliver --source=. --build-artifact="$IMAGE" \
-  --container-repository=ghcr.io/myorg \
-  --helm-repository=oci://ghcr.io/myorg/charts
+dagger call deliver --source=. --build-artifact="$IMAGE"
 
 # Deploy & Validate
 dagger call deploy --source=. \

@@ -13,17 +13,14 @@ class Deliver:
     async def deliver(
         self,
         source: dagger.Directory,
-        container_repository: Optional[str] = "ttl.sh",
-        helm_repository: Optional[str] = "oci://ttl.sh",
         build_artifact: Optional[dagger.File] = None,
         release_candidate: Optional[bool] = False,
     ) -> dagger.File:
-        """Deliver publishes the goserv container and Helm chart to repositories
+        """Deliver publishes the goserv container and Helm chart to repositories.
+        Repository URLs are sourced from injected secrets (see cicd/internal/cicd/secrets.go).
         
         Args:
             source: Source directory containing the project
-            container_repository: Container repository (default: ttl.sh)
-            helm_repository: Helm chart repository URL (default: oci://ttl.sh)
             build_artifact: Build output from the Build function (if not provided, will build from source)
             release_candidate: Build as release candidate (appends -rc to version tag)
         
@@ -31,15 +28,13 @@ class Deliver:
             File containing delivery context
         """
         # Perform delivery operations (container push, chart publish)
+        # Use cicd.container_push() and cicd.helm_push() from cicd/internal/cicd
+        # to push artifacts - repository URLs are injected at runtime.
         # ... delivery logic here ...
 
         # Create delivery context
         delivery_context = {
             "timestamp": datetime.now().isoformat(),
-            "imageReference": f"{container_repository}/goserv:1.0.0",
-            "chartReference": f"{helm_repository}/goserv:0.1.0",
-            "containerRepository": container_repository,
-            "helmRepository": helm_repository,
             "releaseCandidate": release_candidate,
         }
 

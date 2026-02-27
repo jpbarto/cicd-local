@@ -444,8 +444,6 @@ dagger -m cicd call build \
 dagger -m cicd call deliver \
     --source=. \
     --build-artifact=file:./output/build/buildArtifact \
-    --helm-repository=oci://ttl.sh \
-    --container-repository=ttl.sh \
     export --path=./output/deliver/deliveryContext
 ```
 

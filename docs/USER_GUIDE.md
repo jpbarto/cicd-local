@@ -199,17 +199,11 @@ cicd-local ci --pipeline-trigger=pr-merge
 # Skip unit tests
 cicd-local ci --skip-tests
 
-# Custom repositories
-cicd-local ci \
-  --container-repository=ghcr.io/myorg \
-  --helm-repository=oci://ghcr.io/myorg
 ```
 
 **Options:**
 - `--pipeline-trigger <type>` - Pipeline trigger: `commit` (default) or `pr-merge`
 - `--skip-tests` - Skip unit tests
-- `--container-repository <url>` - Container repository URL (default: ttl.sh)
-- `--helm-repository <url>` - Helm OCI repository URL (default: oci://ttl.sh)
 - `--help, -h` - Show help message
 
 **Pipeline flow:**
@@ -236,16 +230,10 @@ cicd-local deliver --release-candidate
 # Skip build (use existing tarball)
 cicd-local deliver --skip-build
 
-# Custom repositories
-cicd-local deliver \
-  --container-repository=ghcr.io/myorg \
-  --helm-repository=oci://ghcr.io/myorg
 ```
 
 **Options:**
 - `--release-candidate, -rc` - Build as release candidate (appends -rc to version)
-- `--container-repository <url>` - Container repository URL (default: ttl.sh)
-- `--helm-repository <url>` - Helm OCI repository URL (default: oci://ttl.sh)
 - `--skip-build` - Skip build step (use existing tarball)
 - `--help, -h` - Show help message
 
@@ -404,9 +392,7 @@ export CONTAINER_REPO="ghcr.io/myorg"
 export HELM_REPO="oci://ghcr.io/myorg"
 
 # Run pipelines
-cicd-local ci --pipeline-trigger=pr-merge \
-  --container-repository=$CONTAINER_REPO \
-  --helm-repository=$HELM_REPO
+cicd-local ci --pipeline-trigger=pr-merge
 
 cicd-local deploy \
   --container-repository=$CONTAINER_REPO \

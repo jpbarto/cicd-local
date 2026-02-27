@@ -206,8 +206,6 @@ async integrationTest(
 func (m *YourModule) Deliver(
     ctx context.Context,
     source *dagger.Directory,
-    containerRepository string,
-    helmRepository string,
     buildArtifact *dagger.File,
     releaseCandidate bool,
 ) (*dagger.File, error)
@@ -219,8 +217,6 @@ func (m *YourModule) Deliver(
 async def deliver(
     self,
     source: dagger.Directory,
-    container_repository: str = "ttl.sh",
-    helm_repository: str = "oci://ttl.sh",
     build_artifact: Optional[dagger.File] = None,
     release_candidate: bool = False,
 ) -> dagger.File:
@@ -230,8 +226,6 @@ async def deliver(
 ```java
 public File deliver(
     Directory source,
-    String containerRepository,
-    String helmRepository,
     File buildArtifact,
     boolean releaseCandidate
 ) throws Exception
@@ -242,8 +236,6 @@ public File deliver(
 @func()
 async deliver(
     source: Directory,
-    containerRepository: string = "ttl.sh",
-    helmRepository: string = "oci://ttl.sh",
     buildArtifact?: File,
     releaseCandidate: boolean = false
 ): Promise<File>

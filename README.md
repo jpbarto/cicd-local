@@ -209,11 +209,7 @@ cicd-local ci --skip-tests
 ### Custom Repositories
 
 ```bash
-# Use your own registries
-cicd-local ci --pipeline-trigger=pr-merge \
-  --container-repository=ghcr.io/myorg \
-  --helm-repository=oci://ghcr.io/myorg
-
+# Use your own registries for deploy
 cicd-local deploy \
   --container-repository=ghcr.io/myorg \
   --helm-repository=oci://ghcr.io/myorg
@@ -224,7 +220,7 @@ cicd-local deploy \
 Create `local_cicd.env` in your project or export environment variables:
 
 ```bash
-# Container and Helm repositories
+# Container and Helm repositories (used by deploy; deliver reads these from injected secrets)
 CONTAINER_REPOSITORY_URL="ttl.sh"
 HELM_REPOSITORY_URL="oci://ttl.sh"
 

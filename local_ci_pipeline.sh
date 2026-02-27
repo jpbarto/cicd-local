@@ -253,8 +253,6 @@ if [ "$PIPELINE_TRIGGER" = "pr-merge" ]; then
     mkdir -p ./output/deliver
     
     DELIVER_CMD="dagger -m cicd call deliver --source=$SOURCE_DIR"
-    DELIVER_CMD="$DELIVER_CMD --container-repository=$CONTAINER_REPOSITORY_URL"
-    DELIVER_CMD="$DELIVER_CMD --helm-repository=$HELM_REPOSITORY_URL"
     DELIVER_CMD="$DELIVER_CMD --build-artifact=./output/build/buildArtifact"
     
     if [ "$RELEASE_CANDIDATE" = true ]; then
