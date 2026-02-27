@@ -1,4 +1,4 @@
-package privileged
+package cicd
 
 import (
 	"context"

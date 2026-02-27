@@ -1,4 +1,4 @@
-package privileged
+package cicd
 
 import (
 	"context"
@@ -6,93 +6,62 @@ import (
 	"os"
 	"path/filepath"
 
-	"dagger.io/dagger"
+	"dagger.io/dagger" //nolint:typecheck // import rewritten by manage_privileged.sh at injection time
 )
 
-// INJECTED SECRETS - These values are replaced at runtime by manage_privileged.sh
-// DO NOT modify these constants manually - they are template placeholders
+// INJECTED SECRETS - These values are replaced at runtime by manage_privileged.sh.
+// Do NOT modify manually.
 const (
-	// __INJECTED_KUBECONFIG__ will be replaced with the actual kubeconfig content
-	injectedKubeconfig = `__INJECTED_KUBECONFIG__`
-
-	// __INJECTED_KUBECTL_CONTEXT__ will be replaced with the kubectl context
+	// injectedKubectlContext holds the minified kubeconfig for the current
+	// kubectl context, injected as a raw string literal before dagger call.
 	injectedKubectlContext = `__INJECTED_KUBECTL_CONTEXT__`
 
-	// __INJECTED_HELM_TIMEOUT__ will be replaced with the helm timeout
-	injectedHelmTimeout = `__INJECTED_HELM_TIMEOUT__`
+	// injectedContainerRepositoryURL is the container image registry URL,
+	// sourced from CONTAINER_REPOSITORY_URL in local_cicd.env.
+	injectedContainerRepositoryURL = `__INJECTED_CONTAINER_REPOSITORY_URL__`
+
+	// injectedHelmRepositoryURL is the Helm chart repository URL,
+	// sourced from HELM_REPOSITORY_URL in local_cicd.env.
+	injectedHelmRepositoryURL = `__INJECTED_HELM_REPOSITORY_URL__`
 )
 
-// k8sConfig holds shared Kubernetes configuration for kubectl and helm operations.
-// This is a private struct used internally by privileged functions to avoid
-// passing kubeconfig repeatedly across function calls.
-type k8sConfig struct {
-	kubeconfig *dagger.Secret
-	context    string
+// GetContainerRepositoryURL returns the injected container image registry URL.
+func GetContainerRepositoryURL() (string, error) {
+	if injectedContainerRepositoryURL == "__INJECTED_CONTAINER_REPOSITORY_URL__" || injectedContainerRepositoryURL == "" {
+		return "", fmt.Errorf("container repository URL not injected - ensure manage_privileged.sh ran before dagger call")
+	}
+	return injectedContainerRepositoryURL, nil
 }
 
-// newK8sConfig creates a new Kubernetes configuration using injected secrets.
-// The secrets are injected at runtime before Dagger execution, so user-defined
-// Dagger functions never have direct access to the sensitive credentials.
-func newK8sConfig(ctx context.Context, client *dagger.Client) (*k8sConfig, error) {
-	// Check if kubeconfig was injected
-	if injectedKubeconfig == "__INJECTED_KUBECONFIG__" || injectedKubeconfig == "" {
-		return nil, fmt.Errorf("kubeconfig not injected - this function must be called after runtime injection")
+// GetHelmRepositoryURL returns the injected Helm chart repository URL.
+func GetHelmRepositoryURL() (string, error) {
+	if injectedHelmRepositoryURL == "__INJECTED_HELM_REPOSITORY_URL__" || injectedHelmRepositoryURL == "" {
+		return "", fmt.Errorf("helm repository URL not injected - ensure manage_privileged.sh ran before dagger call")
 	}
-
-	// Create Dagger secret from injected kubeconfig
-	secret := client.SetSecret("kubeconfig", injectedKubeconfig)
-
-	// Use injected context (empty string is valid)
-	kubectlContext := injectedKubectlContext
-	if kubectlContext == "__INJECTED_KUBECTL_CONTEXT__" {
-		kubectlContext = ""
-	}
-
-	return &k8sConfig{
-		kubeconfig: secret,
-		context:    kubectlContext,
-	}, nil
+	return injectedHelmRepositoryURL, nil
 }
 
-// GetKubectlContext returns the injected kubectl context.
-// Returns empty string if no context was set.
-func GetKubectlContext() string {
-	if injectedKubectlContext == "__INJECTED_KUBECTL_CONTEXT__" {
-		return ""
-	}
-	return injectedKubectlContext
-}
-
-// GetHelmTimeout returns the injected Helm timeout value.
-// Returns "5m" as default if not set.
-func GetHelmTimeout() string {
-	if injectedHelmTimeout == "__INJECTED_HELM_TIMEOUT__" || injectedHelmTimeout == "" {
-		return "5m" // default
-	}
-	return injectedHelmTimeout
-}
-
-// LoadKubeconfig returns the injected kubeconfig as a Dagger secret.
-// The kubeconfig is injected at runtime before Dagger execution.
+// GetKubeconfigSecret returns the injected kubeconfig as a Dagger secret.
+// The value is the output of `kubectl config view --minify --raw` captured
+// at runtime by manage_privileged.sh before dagger call is executed.
 //
 // Parameters:
 //   - ctx: Context for the operation
 //   - client: Dagger client instance
 //
-// Returns a Dagger secret containing the kubeconfig content.
+// Returns a Dagger secret containing the minified kubeconfig content.
 //
 // Example usage:
 //
-//	kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client)
+//	kubeconfigSecret, err := privileged.GetKubeconfigSecret(ctx, client)
 //	if err != nil {
 //	    return err
 //	}
-func LoadKubeconfig(ctx context.Context, client *dagger.Client) (*dagger.Secret, error) {
-	cfg, err := newK8sConfig(ctx, client)
-	if err != nil {
-		return nil, err
+func GetKubeconfigSecret(ctx context.Context, client *dagger.Client) (*dagger.Secret, error) {
+	if injectedKubectlContext == "__INJECTED_KUBECTL_CONTEXT__" || injectedKubectlContext == "" {
+		return nil, fmt.Errorf("kubeconfig not injected - ensure manage_privileged.sh ran before dagger call")
 	}
-	return cfg.kubeconfig, nil
+	return client.SetSecret("kubeconfig", injectedKubectlContext), nil
 }
 
 // GetSecretPath returns the path to a secret file in ~/.cicd-local/secrets/.

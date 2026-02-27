@@ -1,9 +1,10 @@
-package privileged
+package cicd
 
 import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"dagger.io/dagger"
 )
@@ -100,6 +101,85 @@ func HelmInstall(
 	return output, nil
 }
 
+// HelmPush publishes a packaged Helm chart (.tgz file) to the injected Helm
+// repository URL (sourced from HELM_REPOSITORY_URL in local_cicd.env).
+//
+// The chart tarball is pushed with `helm push` and the function returns the
+// fully-qualified chart reference in the form:
+//
+//	<repoURL>/<chartName>:<chartVersion>
+//
+// Parameters:
+//   - ctx: Context for the operation
+//   - client: Dagger client instance
+//   - chartPackage: The packaged chart file (e.g. myapp-1.2.3.tgz)
+//
+// Returns the published chart reference URL or an error.
+//
+// Example usage:
+//
+//	chartRef, err := cicd.HelmPush(ctx, client, chartTgzFile)
+//	if err != nil {
+//	    return "", fmt.Errorf("helm push failed: %w", err)
+//	}
+func HelmPush(
+	ctx context.Context,
+	client *dagger.Client,
+	chartPackage *dagger.File,
+) (string, error) {
+	if chartPackage == nil {
+		return "", fmt.Errorf("chart package file is required")
+	}
+
+	repoURL, err := GetHelmRepositoryURL()
+	if err != nil {
+		return "", err
+	}
+
+	// Mount the chart file into the container
+	container := client.Container().
+		From("alpine/helm:latest").
+		WithMountedFile("/charts/chart.tgz", chartPackage).
+		WithWorkdir("/charts")
+
+	// Extract the chart name and version from the package so we can construct
+	// the published reference URL after the push.
+	nameOutput, err := container.WithExec([]string{
+		"helm", "show", "chart", "/charts/chart.tgz",
+	}).Stdout(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to read chart metadata: %w", err)
+	}
+
+	chartName, chartVersion := "", ""
+	for _, line := range splitLines(nameOutput) {
+		if k, v, ok := strings.Cut(line, ":"); ok {
+			switch strings.TrimSpace(k) {
+			case "name":
+				chartName = strings.TrimSpace(v)
+			case "version":
+				chartVersion = strings.TrimSpace(v)
+			}
+		}
+	}
+	if chartName == "" || chartVersion == "" {
+		return "", fmt.Errorf("could not determine chart name/version from metadata:\n%s", nameOutput)
+	}
+
+	// Push the chart to the OCI registry
+	_, err = container.WithExec([]string{
+		"helm", "push", "/charts/chart.tgz", repoURL,
+	}).Stdout(ctx)
+	if err != nil {
+		return "", fmt.Errorf("helm push failed: %w", err)
+	}
+
+	// Construct the canonical chart reference:  oci://registry/chartName:version
+	// Strip any trailing slash from repoURL before appending.
+	ref := fmt.Sprintf("%s/%s:%s", strings.TrimRight(repoURL, "/"), chartName, chartVersion)
+	return ref, nil
+}
+
 // HelmUpgrade upgrades an existing Helm release.
 // This function performs a Helm upgrade operation for an already installed release.
 //
@@ -176,4 +256,9 @@ func HelmUpgrade(
 	}
 
 	return output, nil
+}
+
+// splitLines splits a string into lines, stripping empty trailing lines.
+func splitLines(s string) []string {
+	return strings.Split(strings.TrimRight(s, "\n"), "\n")
 }
