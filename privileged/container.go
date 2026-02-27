@@ -69,15 +69,22 @@ func ContainerPush(
 	// Build the primary destination reference
 	primaryRef := fmt.Sprintf("%s/%s:%s", registry, imageName, imageTag)
 
-	// Use a single container instance so crane is only pulled once
-	base := client.Container().
-		From(craneImage).
-		WithMountedFile("/image/export.tar", imageExport)
+	// Use a single container instance so crane is only pulled once.
+	// The crane image runs as uid/gid 65532 (distroless nonroot). WithFile
+	// defaults to root ownership, so we set the file world-readable (0444)
+	// to avoid "permission denied" when crane tries to open the tarball.
+	// base := client.Container().
+	// 	From(craneImage).
+	// 	WithFile("/export.tar", imageExport, dagger.ContainerWithFileOpts{
+	// 		Permissions: 0444,
+	// 	})
+	ctr := client.Container().Import(imageExport)
 
 	// Push the tarball to the primary tag
-	_, err = base.
-		WithExec([]string{"crane", "push", "/image/export.tar", primaryRef}).
-		Stdout(ctx)
+	// _, err = base.
+	// 	WithExec([]string{"crane", "push", "/export.tar", primaryRef}).
+	// 	Stdout(ctx)
+	published, err := ctr.Publish(ctx, primaryRef)
 	if err != nil {
 		return "", fmt.Errorf("container push failed for %s: %w", primaryRef, err)
 	}
@@ -89,13 +96,14 @@ func ContainerPush(
 			continue
 		}
 		additionalRef := fmt.Sprintf("%s/%s:%s", registry, imageName, tag)
-		_, err = base.
-			WithExec([]string{"crane", "tag", primaryRef, additionalRef}).
-			Stdout(ctx)
+		// _, err = base.
+		// 	WithExec([]string{"crane", "tag", primaryRef, additionalRef}).
+		// 	Stdout(ctx)
+		_, err = ctr.Publish(ctx, additionalRef)
 		if err != nil {
 			return "", fmt.Errorf("container tag failed for %s: %w", additionalRef, err)
 		}
 	}
 
-	return primaryRef, nil
+	return published, nil
 }

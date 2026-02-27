@@ -195,16 +195,18 @@ fi
 # Inject Privileged Functions
 ################################################################################
 
-if has_privileged_functions; then
-    print_info "Injecting privileged functions..."
-    if inject_privileged_functions "$SOURCE_DIR"; then
-        print_success "Privileged functions injected"
-        # Set up cleanup trap
-        trap "cleanup_privileged_functions '$SOURCE_DIR'" EXIT
-    else
-        print_warning "Could not inject privileged functions (continuing anyway)"
-    fi
+################################################################################
+# Inject Privileged Functions
+################################################################################
+
+# Privileged functions are required for the Deploy step.
+print_info "Injecting privileged functions (required for Deploy)..."
+if ! inject_privileged_functions "$SOURCE_DIR"; then
+    print_error "Failed to inject privileged functions — cannot run Deploy without them"
+    exit 1
 fi
+print_success "Privileged functions injected"
+trap "cleanup_privileged_functions '$SOURCE_DIR'" EXIT
 
 ################################################################################
 # Step 1: Verify Colima Environment

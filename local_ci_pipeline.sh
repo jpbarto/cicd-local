@@ -178,11 +178,21 @@ fi
 # Inject Privileged Functions
 ################################################################################
 
-if has_privileged_functions; then
-    print_info "Injecting privileged functions..."
+# Privileged functions are required for the Deliver step (pr-merge trigger).
+# For commit-only pipelines they are optional — injection is attempted but
+# failure only produces a warning rather than aborting.
+if [ "$PIPELINE_TRIGGER" = "pr-merge" ]; then
+    print_info "Injecting privileged functions (required for Deliver)..."
+    if ! inject_privileged_functions "$SOURCE_DIR"; then
+        print_error "Failed to inject privileged functions — cannot run Deliver without them"
+        exit 1
+    fi
+    print_success "Privileged functions injected"
+    trap "cleanup_privileged_functions '$SOURCE_DIR'" EXIT
+elif has_privileged_functions; then
+    print_info "Injecting privileged functions (optional for commit pipeline)..."
     if inject_privileged_functions "$SOURCE_DIR"; then
         print_success "Privileged functions injected"
-        # Set up cleanup trap
         trap "cleanup_privileged_functions '$SOURCE_DIR'" EXIT
     else
         print_warning "Could not inject privileged functions (continuing anyway)"

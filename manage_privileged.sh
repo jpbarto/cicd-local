@@ -197,22 +197,43 @@ with open(sys.argv[1], "w") as f:
 ' "${secrets_file}" <<< "${kubeconfig_content}"
 
     # Inject container and helm repository URLs from the environment.
-    # These are plain single-line strings so sed is sufficient.
+    # Use Python regex to target only the backtick const assignment, leaving
+    # sentinel checks like == "__INJECTED_CONTAINER_REPOSITORY_URL__" untouched.
     local container_repo_url="${CONTAINER_REPOSITORY_URL:-}"
     local helm_repo_url="${HELM_REPOSITORY_URL:-}"
 
     if [ -z "${container_repo_url}" ]; then
         echo "Warning: CONTAINER_REPOSITORY_URL is not set - container repository URL will not be injected"
     else
-        sed -i.bak "s|__INJECTED_CONTAINER_REPOSITORY_URL__|${container_repo_url}|g" "${secrets_file}"
-        rm -f "${secrets_file}.bak"
+        python3 -c '
+import sys, re
+with open(sys.argv[1], "r") as f:
+    content = f.read()
+content = re.sub(
+    r"(injectedContainerRepositoryURL\s*=\s*)`__INJECTED_CONTAINER_REPOSITORY_URL__`",
+    r"\1`" + sys.argv[2] + r"`",
+    content
+)
+with open(sys.argv[1], "w") as f:
+    f.write(content)
+' "${secrets_file}" "${container_repo_url}"
     fi
 
     if [ -z "${helm_repo_url}" ]; then
         echo "Warning: HELM_REPOSITORY_URL is not set - helm repository URL will not be injected"
     else
-        sed -i.bak "s|__INJECTED_HELM_REPOSITORY_URL__|${helm_repo_url}|g" "${secrets_file}"
-        rm -f "${secrets_file}.bak"
+        python3 -c '
+import sys, re
+with open(sys.argv[1], "r") as f:
+    content = f.read()
+content = re.sub(
+    r"(injectedHelmRepositoryURL\s*=\s*)`__INJECTED_HELM_REPOSITORY_URL__`",
+    r"\1`" + sys.argv[2] + r"`",
+    content
+)
+with open(sys.argv[1], "w") as f:
+    f.write(content)
+' "${secrets_file}" "${helm_repo_url}"
     fi
 
     return 0
