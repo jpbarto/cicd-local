@@ -337,11 +337,15 @@ if [ "$SKIP_VALIDATION" = false ]; then
     
     # Build Dagger Validate command
     VALIDATE_CMD="dagger -m cicd call validate --source=${SOURCE_DIR}"
-    
-    # Add deployment context if available
-    if [ -f "./output/deploy/deploymentContext" ]; then
-        VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file://./output/deploy/deploymentContext"
+
+    # The deployment context is produced by the Deploy step above and is
+    # required by Validate. Fail early if the file is missing rather than
+    # silently running Validate without it.
+    if [ ! -f "./output/deploy/deploymentContext" ]; then
+        print_error "Deployment context not found: ./output/deploy/deploymentContext"
+        exit 1
     fi
+    VALIDATE_CMD="${VALIDATE_CMD} --deployment-context=file://./output/deploy/deploymentContext"
     
     if [ "$RELEASE_CANDIDATE" = true ]; then
         VALIDATE_CMD="${VALIDATE_CMD} --release-candidate=true"
