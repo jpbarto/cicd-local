@@ -16,7 +16,6 @@ import (
 //   - client: Dagger client instance
 //   - manifestsDir: Directory containing Kubernetes YAML manifests
 //   - namespace: Kubernetes namespace to apply to (optional, uses manifest default if empty)
-//   - kubeconfig: Dagger secret containing kubeconfig content
 //
 // Environment variables:
 //   - KUBECTL_CONTEXT: Kubernetes context to use (optional)
@@ -25,8 +24,7 @@ import (
 //
 // Example usage:
 //
-//	kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client, "")
-//	output, err := privileged.KubectlApply(ctx, client, manifestsDir, "default", kubeconfigSecret)
+//	output, err := cicd.KubectlApply(ctx, client, manifestsDir, "default")
 //	if err != nil {
 //	    return "", fmt.Errorf("kubectl apply failed: %w", err)
 //	}
@@ -35,13 +33,14 @@ func KubectlApply(
 	client *dagger.Client,
 	manifestsDir *dagger.Directory,
 	namespace string,
-	kubeconfig *dagger.Secret,
 ) (string, error) {
 	if manifestsDir == nil {
 		return "", fmt.Errorf("manifests directory is required")
 	}
-	if kubeconfig == nil {
-		return "", fmt.Errorf("kubeconfig secret is required")
+
+	kubeconfig, err := GetKubeconfigSecret(ctx, client)
+	if err != nil {
+		return "", fmt.Errorf("failed to get kubeconfig: %w", err)
 	}
 
 	// Start with kubectl container
@@ -80,7 +79,6 @@ func KubectlApply(
 //   - client: Dagger client instance
 //   - namespace: Kubernetes namespace containing the resource
 //   - resourceName: Resource to get (e.g., "pod/mypod", "deployment/myapp", "service/mysvc")
-//   - kubeconfig: Dagger secret containing kubeconfig content
 //
 // Environment variables:
 //   - KUBECTL_CONTEXT: Kubernetes context to use (optional)
@@ -89,8 +87,7 @@ func KubectlApply(
 //
 // Example usage:
 //
-//	kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client, "")
-//	podJSON, err := privileged.KubectlGet(ctx, client, "default", "pod/mypod", kubeconfigSecret)
+//	podJSON, err := cicd.KubectlGet(ctx, client, "default", "pod/mypod")
 //	if err != nil {
 //	    return "", fmt.Errorf("kubectl get failed: %w", err)
 //	}
@@ -99,7 +96,6 @@ func KubectlGet(
 	client *dagger.Client,
 	namespace string,
 	resourceName string,
-	kubeconfig *dagger.Secret,
 ) (string, error) {
 	if namespace == "" {
 		return "", fmt.Errorf("namespace is required")
@@ -107,8 +103,10 @@ func KubectlGet(
 	if resourceName == "" {
 		return "", fmt.Errorf("resource name is required")
 	}
-	if kubeconfig == nil {
-		return "", fmt.Errorf("kubeconfig secret is required")
+
+	kubeconfig, err := GetKubeconfigSecret(ctx, client)
+	if err != nil {
+		return "", fmt.Errorf("failed to get kubeconfig: %w", err)
 	}
 
 	// Start with kubectl container
@@ -143,7 +141,6 @@ func KubectlGet(
 //   - namespace: Kubernetes namespace containing the resource
 //   - resourceName: Resource to forward to (e.g., "pod/mypod", "deployment/myapp", "service/mysvc")
 //   - ports: Port mapping in format "localPort:remotePort" (e.g., "8080:80", "3000:3000")
-//   - kubeconfig: Dagger secret containing kubeconfig content
 //
 // Environment variables:
 //   - KUBECTL_CONTEXT: Kubernetes context to use (optional)
@@ -152,8 +149,7 @@ func KubectlGet(
 //
 // Example usage:
 //
-//	kubeconfigSecret, err := privileged.LoadKubeconfig(ctx, client, "")
-//	portForwardSvc, err := privileged.KubectlPortForward(ctx, client, "default", "pod/mypod", "8080:80", kubeconfigSecret)
+//	portForwardSvc, err := cicd.KubectlPortForward(ctx, client, "default", "pod/mypod", "8080:80")
 //	if err != nil {
 //	    return err
 //	}
@@ -168,7 +164,6 @@ func KubectlPortForward(
 	namespace string,
 	resourceName string,
 	ports string,
-	kubeconfig *dagger.Secret,
 ) (*dagger.Service, error) {
 	if namespace == "" {
 		return nil, fmt.Errorf("namespace is required")
@@ -179,8 +174,10 @@ func KubectlPortForward(
 	if ports == "" {
 		return nil, fmt.Errorf("ports are required (format: localPort:remotePort)")
 	}
-	if kubeconfig == nil {
-		return nil, fmt.Errorf("kubeconfig secret is required")
+
+	kubeconfig, err := GetKubeconfigSecret(ctx, client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get kubeconfig: %w", err)
 	}
 
 	// Start with kubectl container
@@ -233,4 +230,70 @@ func parsePort(portStr string) int {
 		return 8080 // default fallback
 	}
 	return port
+}
+
+// KubectlLogs retrieves log lines from a pod. The kubeconfig is sourced
+// automatically from the injected secrets.
+//
+// Parameters:
+//   - ctx: Context for the operation
+//   - client: Dagger client instance
+//   - namespace: Kubernetes namespace containing the pod
+//   - podName: Name of the pod (e.g. "myapp-7d6b9f-xkj2p")
+//   - lines: Maximum number of log lines to return (passed as --tail)
+//
+// Environment variables:
+//   - KUBECTL_CONTEXT: Kubernetes context to use (optional)
+//
+// Returns the log output as a string or an error.
+//
+// Example usage:
+//
+//	logs, err := cicd.KubectlLogs(ctx, client, "default", "myapp-7d6b9f-xkj2p", 100)
+//	if err != nil {
+//	    return "", fmt.Errorf("kubectl logs failed: %w", err)
+//	}
+func KubectlLogs(
+	ctx context.Context,
+	client *dagger.Client,
+	namespace string,
+	podName string,
+	lines int,
+) (string, error) {
+	if namespace == "" {
+		return "", fmt.Errorf("namespace is required")
+	}
+	if podName == "" {
+		return "", fmt.Errorf("pod name is required")
+	}
+	if lines <= 0 {
+		return "", fmt.Errorf("lines must be greater than 0")
+	}
+
+	kubeconfig, err := GetKubeconfigSecret(ctx, client)
+	if err != nil {
+		return "", fmt.Errorf("failed to get kubeconfig: %w", err)
+	}
+
+	args := []string{
+		"kubectl", "logs",
+		podName,
+		"-n", namespace,
+		"--tail", fmt.Sprintf("%d", lines),
+	}
+
+	if kubectlContext := os.Getenv("KUBECTL_CONTEXT"); kubectlContext != "" {
+		args = append(args, "--context", kubectlContext)
+	}
+
+	output, err := client.Container().
+		From("bitnami/kubectl:latest").
+		WithMountedSecret("/root/.kube/config", kubeconfig).
+		WithExec(args).
+		Stdout(ctx)
+	if err != nil {
+		return "", fmt.Errorf("kubectl logs failed for pod %q in namespace %q: %w", podName, namespace, err)
+	}
+
+	return output, nil
 }
