@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"dagger.io/dagger"
 )
@@ -81,10 +82,9 @@ func ContainerPush(
 	ctr := client.Container().Import(imageExport)
 
 	// Push the tarball to the primary tag
-	// _, err = base.
-	// 	WithExec([]string{"crane", "push", "/export.tar", primaryRef}).
-	// 	Stdout(ctx)
-	published, err := ctr.Publish(ctx, primaryRef)
+	published, err := ctr.
+		WithEnvVariable("CACHE_BUST", time.Now().String()).
+		Publish(ctx, primaryRef)
 	if err != nil {
 		return "", fmt.Errorf("container push failed for %s: %w", primaryRef, err)
 	}
@@ -96,10 +96,9 @@ func ContainerPush(
 			continue
 		}
 		additionalRef := fmt.Sprintf("%s/%s:%s", registry, imageName, tag)
-		// _, err = base.
-		// 	WithExec([]string{"crane", "tag", primaryRef, additionalRef}).
-		// 	Stdout(ctx)
-		_, err = ctr.Publish(ctx, additionalRef)
+		_, err = ctr.
+			WithEnvVariable("CACHE_BUST", time.Now().String()).
+			Publish(ctx, additionalRef)
 		if err != nil {
 			return "", fmt.Errorf("container tag failed for %s: %w", additionalRef, err)
 		}

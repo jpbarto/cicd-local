@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"dagger.io/dagger"
 )
@@ -63,7 +64,10 @@ func KubectlApply(
 	}
 
 	// Execute kubectl apply
-	output, err := container.WithExec(args).Stdout(ctx)
+	output, err := container.
+		WithEnvVariable("CACHE_BUST", time.Now().String()).
+		WithExec(args).
+		Stdout(ctx)
 	if err != nil {
 		return "", fmt.Errorf("kubectl apply failed: %w", err)
 	}
@@ -123,7 +127,10 @@ func KubectlGet(
 	}
 
 	// Execute kubectl get
-	output, err := container.WithExec(args).Stdout(ctx)
+	output, err := container.
+		WithEnvVariable("CACHE_BUST", time.Now().String()).
+		WithExec(args).
+		Stdout(ctx)
 	if err != nil {
 		return "", fmt.Errorf("kubectl get failed: %w", err)
 	}
@@ -211,6 +218,7 @@ func KubectlPortForward(
 	// Create and return the service
 	// The service will run kubectl port-forward in the background
 	service := container.
+		WithEnvVariable("CACHE_BUST", time.Now().String()).
 		WithExec(args).
 		WithExposedPort(parsePort(localPort)).
 		AsService()
@@ -289,6 +297,7 @@ func KubectlLogs(
 	output, err := client.Container().
 		From("bitnami/kubectl:latest").
 		WithMountedSecret("/root/.kube/config", kubeconfig).
+		WithEnvVariable("CACHE_BUST", time.Now().String()).
 		WithExec(args).
 		Stdout(ctx)
 	if err != nil {

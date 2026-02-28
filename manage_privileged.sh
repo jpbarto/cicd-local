@@ -71,7 +71,7 @@ cleanup_privileged_functions() {
     local privileged_dest="${project_dir}/cicd/internal/cicd"
     
     # Check if we should keep privileged functions (for debugging)
-    if [ "${CICD_LOCAL_KEEP_PRIVILEGED}" = "true" ]; then
+    if [ "${CICD_LOCAL_KEEP_PRIVILEGED:-}" = "true" ]; then
         echo "Info: Keeping privileged functions (CICD_LOCAL_KEEP_PRIVILEGED=true)"
         return 0
     fi

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"dagger.io/dagger"
 )
@@ -64,6 +65,7 @@ func HelmInstall(
 		From("bitnami/kubectl:latest").
 		WithMountedSecret("/tmp/kubeconfig", kubeconfig, dagger.ContainerWithMountedSecretOpts{Owner: "1000:1000", Mode: 0444}).
 		WithEnvVariable("KUBECONFIG", "/tmp/kubeconfig").
+		WithEnvVariable("CACHE_BUST", time.Now().String()).
 		WithExec([]string{
 			"kubectl", "create", "namespace", namespace, "-o", "yaml",
 		}).
@@ -104,7 +106,10 @@ func HelmInstall(
 		args = append(args, "--kube-context", kubectlContext)
 	}
 
-	output, err := container.WithExec(args).Stdout(ctx)
+	output, err := container.
+		WithEnvVariable("CACHE_BUST", time.Now().String()).
+		WithExec(args).
+		Stdout(ctx)
 	if err != nil {
 		return "", fmt.Errorf("helm install failed: %w", err)
 	}
